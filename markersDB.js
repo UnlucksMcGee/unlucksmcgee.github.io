@@ -1,5 +1,5 @@
 var markersDB={
-  "Basesae4d_ef6a": {
+  "Basese44d_7bed": {
     "created": false,
     "name": "Bases",
     "raw": [
@@ -107,10 +107,17 @@ var markersDB={
         "x": 328,
         "y": 64,
         "z": 65
+      },
+      {
+        "hovertext": "FeatherSol's Base",
+        "text": "FeatherSol's Base",
+        "x": 125,
+        "y": 64,
+        "z": -200
       }
     ]
   },
-  "Eventsaea7_ef6a": {
+  "Eventse4a7_7bed": {
     "created": false,
     "name": "Events",
     "raw": [
@@ -162,10 +169,17 @@ var markersDB={
         "x": 157,
         "y": 64,
         "z": 585
+      },
+      {
+        "hovertext": "Wedding Event",
+        "text": "Wedding Event",
+        "x": -667,
+        "y": 64,
+        "z": 540
       }
     ]
   },
-  "Landmarks33a7_ef6a": {
+  "Landmarks69a7_7bed": {
     "created": false,
     "name": "Landmarks",
     "raw": [
@@ -294,10 +308,17 @@ var markersDB={
         "x": 1493,
         "y": 64,
         "z": 980
+      },
+      {
+        "hovertext": "Squid Farm",
+        "text": "Squid Farm",
+        "x": 732,
+        "y": 55,
+        "z": -367
       }
     ]
   },
-  "Shopsae95_ef6a": {
+  "Shopse495_7bed": {
     "created": false,
     "name": "Shops",
     "raw": [

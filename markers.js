@@ -4,7 +4,7 @@ var markers={
       "checked": true,
       "createInfoWindow": true,
       "displayName": "Bases",
-      "groupName": "Basesae4d_ef6a",
+      "groupName": "Basese44d_7bed",
       "icon": "markers/marker_base.png",
       "showIconInLegend": true
     },
@@ -12,7 +12,7 @@ var markers={
       "checked": true,
       "createInfoWindow": true,
       "displayName": "Shops",
-      "groupName": "Shopsae95_ef6a",
+      "groupName": "Shopse495_7bed",
       "icon": "markers/marker_shop.png",
       "showIconInLegend": true
     },
@@ -20,7 +20,7 @@ var markers={
       "checked": true,
       "createInfoWindow": true,
       "displayName": "Events",
-      "groupName": "Eventsaea7_ef6a",
+      "groupName": "Eventse4a7_7bed",
       "icon": "markers/marker_event.png",
       "showIconInLegend": true
     },
@@ -28,7 +28,7 @@ var markers={
       "checked": true,
       "createInfoWindow": true,
       "displayName": "Landmarks",
-      "groupName": "Landmarks33a7_ef6a",
+      "groupName": "Landmarks69a7_7bed",
       "icon": "markers/marker_home.png",
       "showIconInLegend": true
     }
