@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en" itemscope itemtype="https://schema.org/Product">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Short description of the document (limit to 150 characters) -->
+    <!-- This content *may* be used as a part of search engine results. -->
+    <meta name="description" content="A description of the page" />
+    <!-- Control the behavior of search engine crawling and indexing -->
+    <meta name="robots" content="index,follow" />
+    <meta name="googlebot" content="index,follow" />
+    <!-- schema props -->
+    <meta itemprop="name" content="Content Title" />
+    <meta itemprop="description" content="UnlucksMcGee's website." />
+    <meta itemprop="image" content="https://unlucksmcgee.github.io" />
+    <!-- Facebook specific starts -->
+    <meta property="fb:app_id" content="123456789" />
+    <meta property="og:url" content="https://example.com/page.html" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Content Title" />
+    <meta property="og:image" content="https://unlucksmcgee.github.io" />
+    <meta property="og:image:alt" content="" />
+    <meta property="og:description" content="UnlucksMcGee's Website" />
+    <meta property="og:site_name" content="UnlucksMcGee's Website" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="article:author" content="" />
+    <!-- Facebook specific ends -->
+    <!-- twitter specific starts -->
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:site" content="@site_account" />
+    <meta name="twitter:creator" content="@individual_account" />
+    <meta name="twitter:url" content="https://unlucksmcgee.github.io" />
+    <meta name="twitter:title" content="Content Title" />
+    <meta name="twitter:description" content="UnlucksMcGee's website." />
+    <meta name="twitter:image" content="https://unlucksmcgee.github.io/preview.jpg" />
+    <meta name="twitter:image:alt" content="UnlucksMcGee's website." />
+    <!-- disallow Twitter from using your site's info for personalization purposes -->
+    <meta name="twitter:dnt" content="on" />
+    <!-- twitter specific ends -->
+    <link rel="icon" sizes="192x192" href="assets/favicon.ico" />
+    <title>UnlucksMcGee</title>
+    <link href="css/main.css" rel="stylesheet" />
+    <link href="css/ddnet.css" rel="stylesheet" />
+</head>
+
+<body>
+    <header>
+        <nav>
+            <h1>DDNet Unfinished Maps Finder</h1>
+        </nav>
+    </header>
+    <main>
+        <br>
+        <h2>Find unfinished maps in common between 1 or more players.</h2>
+        <br>
+        <br>
+        <div style="margin: 0 10rem;">
+            <div id="textinputs">
+
+                <p>Enter player usernames here: (case-sensitive!)</p>
+                <br>
+                <div class="textdiv" id="div_player1" data-num=1>
+                    <label for="text_player1">Player 1:</label>
+                    <input type="text" id="text_player1" value="UnlucksMcGee">
+                </div>
+                <div class="textdiv" id="div_player2" data-num=2>
+                    <label for="text_player1">Player 2:</label>
+                    <input type="text" id="text_player2">
+                </div>
+            </div>
+            <button class="hover_button button_green" onclick="add_textbox()">&nbsp;+&nbsp;</button>
+            <button class="hover_button button_red" onclick="remove_textbox()">&nbsp;&nbsp;-&nbsp;&nbsp;</button>
+            <br>
+            <br>
+            <br>
+            <br>
+            <button class="hover_button" onclick="search()">Search</button>
+        </div>
+        <br>
+        <br>
+        <br>
+        <div id="results_div">
+            <h3>Results:</h3>
+            <ul id="results_ul">
+
+            </ul>
+        </div>
+    </main>
+    <footer>
+        <p>Copyright © 2023</p>
+    </footer>
+</body>
+
+<script>
+    var textinputs_div = document.getElementById("textinputs")
+
+    function get_num_textboxes() {
+        let textdiv_elements = textinputs_div.getElementsByClassName("textdiv")
+        let latest_player_number = -1
+
+        for (const textdiv_element of textdiv_elements) {
+            cur_data_num = parseInt(textdiv_element.getAttribute("data-num"))
+            if (cur_data_num > latest_player_number) {
+                latest_player_number = cur_data_num
+            }
+        }
+
+        return parseInt(latest_player_number)
+    }
+
+    function add_textbox() {
+        latest_player_number = get_num_textboxes()
+
+        if (latest_player_number == -1) {
+            window.alert("Error adding player textbox")
+            return
+        } else if (latest_player_number == 10) {
+            window.alert("Max 10 players allowed.")
+            return
+        }
+
+        let new_player_number = parseInt(latest_player_number) + 1
+        new_div = document.createElement("div")
+        new_div.setAttribute("class", "textdiv")
+        new_div.setAttribute("id", "div_player" + new_player_number)
+        new_div.setAttribute("data-num", new_player_number)
+
+        new_input = document.createElement("input", { "type": "text", })
+        new_input.setAttribute("id", "text_player" + new_player_number)
+        new_input.setAttribute("type", "text")
+
+        new_label = document.createElement("label")
+        new_label.setAttribute("for", "text_player" + new_player_number)
+        new_label.innerHTML = "Player " + new_player_number + ":"
+
+        new_div.appendChild(new_label)
+        new_div.appendChild(new_input)
+        textinputs_div.appendChild(new_div)
+
+    }
+
+    function remove_textbox() {
+        latest_player_number = get_num_textboxes()
+
+        if (latest_player_number == -1) {
+            window.alert("Error removing player textbox")
+            return
+        } else if (latest_player_number == 1) {
+            return
+        }
+
+        latest_div = document.getElementById("div_player" + latest_player_number)
+        if (latest_div == null) {
+            window.alert("Error removing player textbox")
+        }
+
+        latest_div.remove()
+
+    }
+
+    function search() {
+        let num_textboxes = get_num_textboxes()
+
+        for (let index = 1; index <= num_textboxes; index++) {
+            const textinput_element = document.getElementById("text_player" + index)
+            if (textinput_element == null) {
+                console.log("error retrieving element")
+                continue
+            }
+            username = textinput_element.value
+            if (username == "") {
+                window.alert("Please fill in all the textboxes (or remove unused ones)")
+                return
+            }
+
+            fetch("https://ddnet.org/players/?json2="+username).then((response) => {
+                console.log(response)
+                console.log(response.ok)
+                return response.json()
+            }).then((json_response) => {
+                if (json_response.length == 0) {
+                    window.alert("Username not found:" + username)
+                    return
+                } else {
+                    window.alert(json_response["points"]["points"])
+                }
+            }).catch((error) => {
+                window.alert("Error")
+                console.log(error)
+            })
+            
+        }
+    }
+</script>
+
+</html>
