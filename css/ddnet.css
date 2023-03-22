@@ -3,6 +3,13 @@
     --green_colour_hover: hsl(120, 100%, 70%);
     --red_colour: hsl(0, 100%, 80%);
     --red_colour_hover: hsl(0, 100%, 70%);
+    --cyan_colour: hsl(184, 100%, 80%);
+    --cyan_colour_hover: hsl(184, 100%, 60%);
+}
+
+html {
+    scroll-behavior: smooth;
+    scroll-padding-top: calc(var(--header_height) + 2rem);
 }
 
 button.hover_button {
@@ -10,14 +17,24 @@ button.hover_button {
     border-radius: 0.5rem;
     padding: 0.5rem;
 }
+
 button.hover_button:hover {
     background-color: var(--link_hover_color)
+}
+
+a {
+    background-color: var(--cyan_colour);
+}
+
+a:hover {
+    background-color: var(--cyan_colour_hover);
 }
 
 
 button.button_green {
     background-color: var(--green_colour);
 }
+
 button.button_green:hover {
     background-color: var(--green_colour_hover);
 }
@@ -25,10 +42,80 @@ button.button_green:hover {
 button.button_red {
     background-color: var(--red_colour);
 }
+
 button.button_red:hover {
     background-color: var(--red_colour_hover);
 }
 
-.textdiv > input {
+button.button_cyan {
+    background-color: var(--cyan_colour);
+}
+
+button.button_cyan:hover {
+    background-color: var(--cyan_colour_hover);
+}
+
+.textdiv>input {
     margin-bottom: 1rem;
+}
+
+h3 {
+    font-weight: bolder;
+    font-size: 1.5rem;
+}
+
+table,
+th,
+td {
+    border: 1px solid;
+    padding: 0.2rem;
+    text-align: center;
+}
+
+th {
+    font-weight: bold;
+}
+
+tr>td:first-child {
+    text-align: left;
+}
+
+table {
+    border-collapse: collapse;
+}
+
+td {
+    font-size: smaller;
+    max-width: 25rem;
+    overflow-wrap: break-word;
+}
+
+#results_div {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: space-around;
+}
+
+#results_div>* {
+    margin: 1rem 0.1rem;
+    width: fit-content;
+    padding: 1rem;
+    background-color: hsl(207, 100%, 80%);
+    border-radius: 1rem;
+    height: fit-content;
+    max-height: 20rem;
+    overflow-y: auto;
+}
+
+#results_shortcut_links_div {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+#results_shortcut_links_div>* {
+    margin: 0.1rem 0.1rem;
+    width: fit-content;
 }

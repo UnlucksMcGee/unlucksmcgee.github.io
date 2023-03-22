@@ -6,23 +6,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <!-- Short description of the document (limit to 150 characters) -->
     <!-- This content *may* be used as a part of search engine results. -->
-    <meta name="description" content="A description of the page" />
+    <meta name="description" content="A utility for finding common unfinished maps between DDNet players." />
     <!-- Control the behavior of search engine crawling and indexing -->
     <meta name="robots" content="index,follow" />
     <meta name="googlebot" content="index,follow" />
     <!-- schema props -->
-    <meta itemprop="name" content="Content Title" />
-    <meta itemprop="description" content="UnlucksMcGee's website." />
+    <meta itemprop="name" content="DDNet Unfinished Maps Finder" />
+    <meta itemprop="description" content="A utility for finding common unfinished maps between DDNet players." />
     <meta itemprop="image" content="https://unlucksmcgee.github.io" />
     <!-- Facebook specific starts -->
     <meta property="fb:app_id" content="123456789" />
-    <meta property="og:url" content="https://example.com/page.html" />
+    <meta property="og:url" content="https://unlucksmcgee.github.io" />
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="Content Title" />
+    <meta property="og:title" content="DDNet Unfinished Maps Finder" />
     <meta property="og:image" content="https://unlucksmcgee.github.io" />
     <meta property="og:image:alt" content="" />
-    <meta property="og:description" content="UnlucksMcGee's Website" />
-    <meta property="og:site_name" content="UnlucksMcGee's Website" />
+    <meta property="og:description" content="A utility for finding common unfinished maps between DDNet players." />
+    <meta property="og:site_name" content="DDNet Unfinished Maps Finder" />
     <meta property="og:locale" content="en_US" />
     <meta property="article:author" content="" />
     <!-- Facebook specific ends -->
@@ -31,14 +31,14 @@
     <meta name="twitter:site" content="@site_account" />
     <meta name="twitter:creator" content="@individual_account" />
     <meta name="twitter:url" content="https://unlucksmcgee.github.io" />
-    <meta name="twitter:title" content="Content Title" />
-    <meta name="twitter:description" content="UnlucksMcGee's website." />
+    <meta name="twitter:title" content="DDNet Unfinished Maps Finder" />
+    <meta name="twitter:description" content="A utility for finding common unfinished maps between DDNet players." />
     <meta name="twitter:image" content="https://unlucksmcgee.github.io/preview.jpg" />
-    <meta name="twitter:image:alt" content="UnlucksMcGee's website." />
+    <meta name="twitter:image:alt" content="A utility for finding common unfinished maps between DDNet players." />
     <!-- disallow Twitter from using your site's info for personalization purposes -->
     <meta name="twitter:dnt" content="on" />
     <!-- twitter specific ends -->
-    <link rel="icon" sizes="192x192" href="assets/favicon.ico" />
+    <!-- <link rel="icon" sizes="192x192" href="assets/favicon.ico" /> -->
     <title>UnlucksMcGee</title>
     <link href="css/main.css" rel="stylesheet" />
     <link href="css/ddnet.css" rel="stylesheet" />
@@ -52,10 +52,11 @@
     </header>
     <main>
         <br>
-        <h2>Find unfinished maps in common between 1 or more players.</h2>
+        <h2 style="text-align: center;">Find unfinished maps in common between 1 or more players.</h2>
         <br>
         <br>
-        <div style="margin: 0 10rem;">
+        <div
+            style="margin: 0 auto; width: fit-content; padding: 1rem; background-color: hsl(207, 100%, 80%); border-radius: 1rem;">
             <div id="textinputs">
 
                 <p>Enter player usernames here: (case-sensitive!)</p>
@@ -69,23 +70,24 @@
                     <input type="text" id="text_player2">
                 </div>
             </div>
-            <button class="hover_button button_green" onclick="add_textbox()">&nbsp;+&nbsp;</button>
-            <button class="hover_button button_red" onclick="remove_textbox()">&nbsp;&nbsp;-&nbsp;&nbsp;</button>
-            <br>
-            <br>
-            <br>
-            <br>
-            <button class="hover_button" onclick="search()">Search</button>
+            <div style="text-align: center;">
+                <button class="hover_button button_green" onclick="add_textbox()">&nbsp;+&nbsp;</button>
+                <button class="hover_button button_red" onclick="remove_textbox()">&nbsp;&nbsp;-&nbsp;&nbsp;</button>
+                <br>
+                <br>
+                <br>
+                <br>
+                <button class="hover_button button_cyan" onclick="search()">Search</button>
+            </div>
         </div>
         <br>
         <br>
         <br>
-        <div id="results_div">
-            <h3>Results:</h3>
-            <ul id="results_ul">
-
-            </ul>
-        </div>
+        <h3 style="text-align: center; margin-bottom: 1rem;">Results</h3>
+        <div style="text-align: center;" id="results_shortcut_links_div"></div>
+        <br>
+        <br>
+        <div id="results_div"></div>
     </main>
     <footer>
         <p>Copyright © 2023</p>
@@ -94,6 +96,8 @@
 
 <script>
     var textinputs_div = document.getElementById("textinputs")
+    var results_div = document.getElementById("results_div")
+    var results_shortcut_links_div = document.getElementById("results_shortcut_links_div")
 
     function get_num_textboxes() {
         let textdiv_elements = textinputs_div.getElementsByClassName("textdiv")
@@ -154,14 +158,13 @@
         if (latest_div == null) {
             window.alert("Error removing player textbox")
         }
-
         latest_div.remove()
-
     }
 
     function search() {
         let num_textboxes = get_num_textboxes()
 
+        let usernames_list = []
         for (let index = 1; index <= num_textboxes; index++) {
             const textinput_element = document.getElementById("text_player" + index)
             if (textinput_element == null) {
@@ -173,24 +176,139 @@
                 window.alert("Please fill in all the textboxes (or remove unused ones)")
                 return
             }
-
-            fetch("https://ddnet.org/players/?json2="+username).then((response) => {
-                console.log(response)
-                console.log(response.ok)
-                return response.json()
-            }).then((json_response) => {
-                if (json_response.length == 0) {
-                    window.alert("Username not found:" + username)
-                    return
-                } else {
-                    window.alert(json_response["points"]["points"])
-                }
-            }).catch((error) => {
-                window.alert("Error")
-                console.log(error)
-            })
-            
+            usernames_list.push(username)
         }
+
+        const get_all_players_json = async () => {
+            try {
+                let response = await Promise.all(usernames_list.map(username => fetch("https://ddnet.org/players/?json2=" + username)))
+                let response_json = await Promise.all(response.map(e => e.json()))
+
+                console.log("Processing...")
+                let all_players_json_list = response_json
+
+                let unfinished_map_details_dict = {} //first key is server type e.g. Novice, nested key is map name with details
+                let player_unfinished_maps_dict = {} // first key is username, nested key is server type e.g. Novice, double-nested key is map name
+                for (let user_index = 0; user_index < usernames_list.length; user_index++) {
+                    let username = usernames_list[user_index];
+                    user_json = all_players_json_list[user_index]
+                    // If empty object returned then username not found
+                    if (Object.keys(user_json).length == 0) {
+                        window.alert("Username not found: " + username)
+                        return
+                    }
+                    // Fill unfinished maps dict
+                    player_unfinished_maps_dict[username] = {}
+                    for (const server_type in user_json["types"]) {
+                        player_unfinished_maps_dict[username][server_type] = new Set()
+
+                        if (!(server_type in unfinished_map_details_dict)) {
+                            unfinished_map_details_dict[server_type] = {}
+                        }
+
+                        for (const map_name in user_json["types"][server_type]["maps"]) {
+                            if (user_json["types"][server_type]["maps"][map_name]["finishes"] == 0) {
+                                player_unfinished_maps_dict[username][server_type].add(map_name)
+                                unfinished_map_details_dict[server_type][map_name] = {
+                                    "total_finishes": user_json["types"][server_type]["maps"][map_name]["total_finishes"],
+                                    "points": user_json["types"][server_type]["maps"][map_name]["points"]
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Filter unfinished maps by commonality
+                let common_unfinished_maps_dict = {}
+
+                // Fill dict with first player's unfinished maps
+                common_unfinished_maps_dict = player_unfinished_maps_dict[usernames_list[0]]
+
+                for (let user_index = 1; user_index < usernames_list.length; user_index++) {
+                    for (const server_type in player_unfinished_maps_dict[usernames_list[user_index]]) {
+                        common_unfinished_maps_dict[server_type] = new Set([...player_unfinished_maps_dict[usernames_list[user_index]][server_type]].filter(i => common_unfinished_maps_dict[server_type].has(i)))
+                    }
+                }
+                console.log(common_unfinished_maps_dict)
+
+                // Sort by points ASC and then by finishes DESC
+                for (const server_type in common_unfinished_maps_dict) {
+                    function compare_points_and_finishes(a, b) {
+                        if (unfinished_map_details_dict[server_type][a]["points"] < unfinished_map_details_dict[server_type][b]["points"]) {
+                            return -1;
+                        }
+                        if (unfinished_map_details_dict[server_type][a]["points"] > unfinished_map_details_dict[server_type][b]["points"]) {
+                            return 1;
+                        }
+                        if (unfinished_map_details_dict[server_type][a]["total_finishes"] < unfinished_map_details_dict[server_type][b]["total_finishes"]) {
+                            return 1;
+                        }
+                        if (unfinished_map_details_dict[server_type][a]["total_finishes"] > unfinished_map_details_dict[server_type][b]["total_finishes"]) {
+                            return -1;
+                        }
+                        return 0;
+                    }
+
+                    // Convert into array/list
+                    common_unfinished_maps_dict[server_type] = Array.from(common_unfinished_maps_dict[server_type])
+                    common_unfinished_maps_dict[server_type].sort(compare_points_and_finishes)
+                }
+
+                results_div.innerHTML = ""
+                results_shortcut_links_div.innerHTML = ""
+
+                for (const server_type in common_unfinished_maps_dict) {
+                    // Create shortcut links
+                    let new_shortcut = document.createElement("a")
+                    new_shortcut.setAttribute("href", "#" + server_type)
+                    // .size since it is a Set
+                    new_shortcut.innerHTML = server_type + "(" + common_unfinished_maps_dict[server_type].length + ")"    
+                    results_shortcut_links_div.appendChild(new_shortcut)
+
+                    // Create tables
+                    let new_section_div = document.createElement("div")
+                    let new_header = document.createElement("h3")
+                    new_header.innerHTML = server_type
+                    new_header.id = server_type
+                    let new_table = document.createElement("table")
+
+                    let tr = document.createElement("tr")
+                    for (header_title of ["Map Name", "Points", "Total Finishes"]) {
+                        let th = document.createElement("th")
+                        th.innerHTML = header_title
+                        tr.appendChild(th)
+                    }
+                    new_table.appendChild(tr)
+
+                    for (const map_name of common_unfinished_maps_dict[server_type]) {
+                        let tr = document.createElement("tr")
+                        let td = document.createElement("td")
+                        td.innerHTML = map_name
+                        tr.appendChild(td)
+
+                        td = document.createElement("td")
+                        td.innerHTML = unfinished_map_details_dict[server_type][map_name]["points"]
+                        tr.appendChild(td)
+
+                        td = document.createElement("td")
+                        td.innerHTML = unfinished_map_details_dict[server_type][map_name]["total_finishes"]
+                        tr.appendChild(td)
+
+                        new_table.appendChild(tr)
+                    }
+
+                    new_section_div.appendChild(new_header)
+                    new_section_div.appendChild(new_table)
+
+                    results_div.appendChild(new_section_div)
+                }
+
+            } catch (err) {
+                window.alert("Error")
+                console.log(err)
+            }
+        }
+        get_all_players_json()
     }
 </script>
 
