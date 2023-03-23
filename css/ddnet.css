@@ -3,8 +3,9 @@
     --green_colour_hover: hsl(120, 100%, 70%);
     --red_colour: hsl(0, 100%, 80%);
     --red_colour_hover: hsl(0, 100%, 70%);
-    --cyan_colour: hsl(184, 100%, 80%);
-    --cyan_colour_hover: hsl(184, 100%, 60%);
+    --extra_colour: hsl(46, 73%, 94%);
+    --extra_colour_hover: hsl(46, 73%, 74%);
+    --secondary_colour: #F4E6B8;
 }
 
 html {
@@ -23,11 +24,11 @@ button.hover_button:hover {
 }
 
 a {
-    background-color: var(--cyan_colour);
+    background-color: var(--extra_colour);
 }
 
 a:hover {
-    background-color: var(--cyan_colour_hover);
+    background-color: var(--extra_colour_hover);
 }
 
 
@@ -48,11 +49,11 @@ button.button_red:hover {
 }
 
 button.button_cyan {
-    background-color: var(--cyan_colour);
+    background-color: var(--extra_colour);
 }
 
 button.button_cyan:hover {
-    background-color: var(--cyan_colour_hover);
+    background-color: var(--extra_colour_hover);
 }
 
 .textdiv>input {
@@ -101,7 +102,7 @@ td {
     margin: 1rem 0.1rem;
     width: fit-content;
     padding: 1rem;
-    background-color: hsl(207, 100%, 80%);
+    background-color: var(--secondary_colour);
     border-radius: 1rem;
     height: fit-content;
     height: 20rem;
@@ -119,4 +120,5 @@ td {
 #results_shortcut_links_div>* {
     margin: 0.1rem 0.1rem;
     width: fit-content;
+    box-shadow: 0px 0px 6px 0px rgba(0, 0, 0, 0.5);
 }

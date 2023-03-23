@@ -1,13 +1,14 @@
 :root {
     --header_color: white;
-    --header_background_color: #333333;
+    --header_background_color: #133C55;
     --footer_color: white;
-    --footer_background_color: #333333;
+    --footer_background_color: #133C55;
     --link_hover_color: hsl(207, 100%, 60%);
     --link_background_color: hsl(207, 100%, 80%);
     --header_height: 2rem;
     --footer_height: 2rem;
     --number_of_menu_items: 4;
+    --background_colour: #59A5D8;
 }
 
 *,
@@ -38,6 +39,7 @@ html {
 
 body {
     font-family: Verdana, Geneva, Tahoma, sans-serif;
+    background-color: var(--background_colour);
 }
 
 header {
@@ -116,10 +118,11 @@ a:hover {
     background-color: var(--link_hover_color)
 }
 
-h1 {
+header > nav > h1 {
     color: white;
-    background-color: #888888;
+    background-color: var(--header_background_color);
     text-align: center;
+    padding: 0.2rem;
     width: 100%;
 }
 
