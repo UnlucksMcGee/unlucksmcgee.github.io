@@ -267,18 +267,24 @@
                 results_shortcut_links_div.innerHTML = ""
 
                 for (const server_type in common_unfinished_maps_dict) {
+                    if (common_unfinished_maps_dict[server_type].length == 0) {
+                        // Skip creating section for empty table
+                        continue
+                    }
+
                     // Create shortcut links
                     let new_shortcut = document.createElement("a")
                     new_shortcut.setAttribute("href", "#" + server_type)
                     // .size since it is a Set
-                    new_shortcut.innerHTML = server_type + "(" + common_unfinished_maps_dict[server_type].length + ")"
+                    new_shortcut.innerHTML = server_type + " (" + common_unfinished_maps_dict[server_type].length + ")"
                     results_shortcut_links_div.appendChild(new_shortcut)
 
                     // Create tables
                     let new_section_div = document.createElement("div")
                     let new_header = document.createElement("h3")
-                    new_header.innerHTML = server_type
+                    new_header.innerHTML = server_type + " (" + common_unfinished_maps_dict[server_type].length + ")"
                     new_header.id = server_type
+                    new_header.style = "text-align: center"
                     let new_table = document.createElement("table")
 
                     let tr = document.createElement("tr")
@@ -310,6 +316,9 @@
                     new_section_div.appendChild(new_table)
 
                     results_div.appendChild(new_section_div)
+                }
+                if (results_div.innerHTML == "") {
+                    results_div.innerHTML = "None"
                 }
 
             } catch (err) {
