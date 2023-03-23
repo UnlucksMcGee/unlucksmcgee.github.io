@@ -42,6 +42,15 @@
     <title>UnlucksMcGee</title>
     <link href="css/main.css" rel="stylesheet" />
     <link href="css/ddnet.css" rel="stylesheet" />
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-J887VM1ELW"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+
+        gtag('config', 'G-J887VM1ELW');
+    </script>
 </head>
 
 <body>
@@ -262,7 +271,7 @@
                     let new_shortcut = document.createElement("a")
                     new_shortcut.setAttribute("href", "#" + server_type)
                     // .size since it is a Set
-                    new_shortcut.innerHTML = server_type + "(" + common_unfinished_maps_dict[server_type].length + ")"    
+                    new_shortcut.innerHTML = server_type + "(" + common_unfinished_maps_dict[server_type].length + ")"
                     results_shortcut_links_div.appendChild(new_shortcut)
 
                     // Create tables
