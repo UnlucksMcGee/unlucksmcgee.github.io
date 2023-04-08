@@ -42,6 +42,9 @@
     <title>UnlucksMcGee - DDNet</title>
     <link href="css/main.css" rel="stylesheet" />
     <link href="css/ddnet.css" rel="stylesheet" />
+    <link href="css/autocomplete.css" rel="stylesheet" />
+    <script src="js/zaf_players.js"></script>
+    <script src="js/autocomplete.js"></script>
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-J887VM1ELW"></script>
     <script>
@@ -91,12 +94,16 @@
         </div>
         <br>
         <br>
-        <br>
-        <h3 style="text-align: center; margin-bottom: 1rem;">Results</h3>
-        <div style="text-align: center;" id="results_shortcut_links_div"></div>
-        <br>
-        <br>
-        <div id="results_div"></div>
+        <div id="results_section_div" style="display: none;">
+            <h3 style="text-align: center; margin-bottom: 1rem;">Players</h3>
+            <div style="text-align: center;" id="player_results_div"></div>
+            <br>
+            <h3 style="text-align: center; margin-bottom: 1rem;">Maps</h3>
+            <div style="text-align: center;" id="results_shortcut_links_div"></div>
+            <br>
+            <br>
+            <div id="map_results_div"></div>
+        </div>
     </main>
     <footer>
         <p>Copyright © 2023</p>
@@ -104,9 +111,14 @@
 </body>
 
 <script>
+    autocomplete(document.getElementById("text_player1"), zaf_players);
+    autocomplete(document.getElementById("text_player2"), zaf_players);
+
     var textinputs_div = document.getElementById("textinputs")
-    var results_div = document.getElementById("results_div")
+    var results_section_div = document.getElementById("results_section_div")
+    var map_results_div = document.getElementById("map_results_div")
     var results_shortcut_links_div = document.getElementById("results_shortcut_links_div")
+    var player_results_div = document.getElementById("player_results_div")
 
     function get_num_textboxes() {
         let textdiv_elements = textinputs_div.getElementsByClassName("textdiv")
@@ -145,12 +157,13 @@
 
         new_label = document.createElement("label")
         new_label.setAttribute("for", "text_player" + new_player_number)
-        new_label.innerHTML = "Player " + new_player_number + ":"
+        new_label.innerHTML = "Player " + new_player_number + ": "
 
         new_div.appendChild(new_label)
         new_div.appendChild(new_input)
         textinputs_div.appendChild(new_div)
 
+        autocomplete(document.getElementById("text_player" + new_player_number), zaf_players);
     }
 
     function remove_textbox() {
@@ -188,6 +201,11 @@
             usernames_list.push(username)
         }
 
+        results_section_div.style.display = "block"
+
+        map_results_div.innerHTML = "<div class='loading-spinner'></div>"
+        player_results_div.innerHTML = "<div class='loading-spinner'></div>"
+
         const get_all_players_json = async () => {
             try {
                 let response = await Promise.all(usernames_list.map(username => fetch("https://ddnet.org/players/?json2=" + username)))
@@ -198,14 +216,18 @@
 
                 let unfinished_map_details_dict = {} //first key is server type e.g. Novice, nested key is map name with details
                 let player_unfinished_maps_dict = {} // first key is username, nested key is server type e.g. Novice, double-nested key is map name
+                let player_points = {}
                 for (let user_index = 0; user_index < usernames_list.length; user_index++) {
                     let username = usernames_list[user_index];
                     user_json = all_players_json_list[user_index]
                     // If empty object returned then username not found
                     if (Object.keys(user_json).length == 0) {
                         window.alert("Username not found: " + username)
+                        results_section_div.style.display = "none"
                         return
                     }
+                    //Fill player points
+                    player_points[username] = user_json["points"]["points"]
                     // Fill unfinished maps dict
                     player_unfinished_maps_dict[username] = {}
                     for (const server_type in user_json["types"]) {
@@ -263,8 +285,20 @@
                     common_unfinished_maps_dict[server_type].sort(compare_points_and_finishes)
                 }
 
-                results_div.innerHTML = ""
+                map_results_div.innerHTML = ""
                 results_shortcut_links_div.innerHTML = ""
+                player_results_div.innerHTML = ""
+
+                // Create player links
+                for (const username of usernames_list) {
+                    let new_shortcut = document.createElement("a")
+                    new_shortcut.setAttribute("href", "https://ddnet.org/players/" + username)
+                    new_shortcut.setAttribute("target", "_blank")
+                    new_shortcut.setAttribute("title", "Open player page on ddnet.org")
+                    new_shortcut.setAttribute("class", "player_link")
+                    new_shortcut.innerHTML = username + " (" + player_points[username] +"pts)"
+                    player_results_div.appendChild(new_shortcut)
+                }
 
                 for (const server_type in common_unfinished_maps_dict) {
                     if (common_unfinished_maps_dict[server_type].length == 0) {
@@ -275,12 +309,12 @@
                     // Create shortcut links
                     let new_shortcut = document.createElement("a")
                     new_shortcut.setAttribute("href", "#" + server_type)
-                    // .size since it is a Set
                     new_shortcut.innerHTML = server_type + " (" + common_unfinished_maps_dict[server_type].length + ")"
                     results_shortcut_links_div.appendChild(new_shortcut)
 
                     // Create tables
                     let new_section_div = document.createElement("div")
+                    new_section_div.setAttribute("class", "map_section")
                     let new_header = document.createElement("h3")
                     new_header.innerHTML = server_type + " (" + common_unfinished_maps_dict[server_type].length + ")"
                     new_header.id = server_type
@@ -315,10 +349,10 @@
                     new_section_div.appendChild(new_header)
                     new_section_div.appendChild(new_table)
 
-                    results_div.appendChild(new_section_div)
+                    map_results_div.appendChild(new_section_div)
                 }
-                if (results_div.innerHTML == "") {
-                    results_div.innerHTML = "None"
+                if (map_results_div.innerHTML == "") {
+                    map_results_div.innerHTML = "None"
                 }
 
             } catch (err) {
