@@ -108,6 +108,7 @@ td>a:hover {
     flex-direction: row;
     flex-wrap: wrap;
     justify-content: center;
+    gap: 1rem;
 }
 
 #map_results_div>div.map_section {
