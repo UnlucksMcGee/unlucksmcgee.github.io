@@ -45,6 +45,7 @@
     <link href="css/autocomplete.css" rel="stylesheet" />
     <script src="js/zaf_players.js"></script>
     <script src="js/autocomplete.js"></script>
+    <script src="js/map_data.js"></script>
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-J887VM1ELW"></script>
     <script>
@@ -103,6 +104,7 @@
             <br>
             <br>
             <div id="map_results_div"></div>
+            <p id="map_data_last_updated_p">Map times last updated: </p>
         </div>
     </main>
     <footer>
@@ -119,6 +121,9 @@
     var map_results_div = document.getElementById("map_results_div")
     var results_shortcut_links_div = document.getElementById("results_shortcut_links_div")
     var player_results_div = document.getElementById("player_results_div")
+
+    let map_data_last_updated_p = document.getElementById("map_data_last_updated_p")
+    map_data_last_updated_p.innerHTML += map_data_last_updated
 
     function get_num_textboxes() {
         let textdiv_elements = textinputs_div.getElementsByClassName("textdiv")
@@ -323,7 +328,7 @@
                     let new_table = document.createElement("table")
 
                     let tr = document.createElement("tr")
-                    for (header_title of ["Map Name", "Points", "Total Finishes"]) {
+                    for (header_title of ["Map Name", "Points", "Finishes", "Median/Top Time"]) {
                         let th = document.createElement("th")
                         th.innerHTML = header_title
                         tr.appendChild(th)
@@ -333,7 +338,14 @@
                     for (const map_name of common_unfinished_maps_dict[server_type]) {
                         let tr = document.createElement("tr")
                         let td = document.createElement("td")
-                        td.innerHTML = map_name
+                        let new_map_shortcut = document.createElement("a")
+                        new_map_shortcut.setAttribute("target", "_blank")
+                        if (map_data.hasOwnProperty(map_name) && map_data[map_name].hasOwnProperty("website")) {
+                            new_map_shortcut.setAttribute("href", map_data[map_name]["website"])
+                        }
+                        
+                        new_map_shortcut.innerHTML = map_name
+                        td.appendChild(new_map_shortcut)
                         tr.appendChild(td)
 
                         td = document.createElement("td")
@@ -342,6 +354,48 @@
 
                         td = document.createElement("td")
                         td.innerHTML = unfinished_map_details_dict[server_type][map_name]["total_finishes"]
+                        tr.appendChild(td)
+
+                        td = document.createElement("td")
+                        let median_time = null
+                        let top_time = null
+                        if (map_data.hasOwnProperty(map_name) && map_data[map_name].hasOwnProperty("median_time")) {
+                            median_time = map_data[map_name]["median_time"]
+                        }
+                        if (map_data.hasOwnProperty(map_name) && map_data[map_name].hasOwnProperty("fastest_team_finish")) {
+                            if (top_time != null) {
+                                top_time = Math.min(top_time, map_data[map_name]["fastest_team_finish"])
+                            } else {
+                                top_time = map_data[map_name]["fastest_team_finish"]
+                            }
+                        }
+                        if (map_data.hasOwnProperty(map_name) && map_data[map_name].hasOwnProperty("fastest_rank_finish")) {
+                            if (top_time != null) {
+                                top_time = Math.min(top_time, map_data[map_name]["fastest_rank_finish"])
+                            } else {
+                                top_time = map_data[map_name]["fastest_rank_finish"]
+                            }
+                        }
+                        if (median_time != null) {
+                            if (median_time < 3600) {
+                                median_time = new Date(median_time * 1000).toISOString().substring(14, 19)
+                            } else {
+                                median_time = new Date(median_time * 1000).toISOString().substring(11, 19)
+                            }
+                        } else {
+                            median_time = "?"
+                        }
+
+                        if (top_time != null) {
+                            if (top_time < 3600) {
+                                top_time = new Date(top_time * 1000).toISOString().substring(14, 19)
+                            } else {
+                                top_time = new Date(top_time * 1000).toISOString().substring(11, 19)
+                            }
+                        } else {
+                            top_time = "?"
+                        }
+                        td.innerHTML = median_time + " / " + top_time
                         tr.appendChild(td)
 
                         new_table.appendChild(tr)

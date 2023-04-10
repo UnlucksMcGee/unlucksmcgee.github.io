@@ -91,6 +91,18 @@ td {
     overflow-wrap: break-word;
 }
 
+td>a {
+    all: unset;
+    text-decoration: none;
+    color: black;
+}
+
+td>a:hover {
+    all: unset;
+    text-decoration: underline !important;
+    cursor: pointer;
+}
+
 #map_results_div {
     display: flex;
     flex-direction: row;
