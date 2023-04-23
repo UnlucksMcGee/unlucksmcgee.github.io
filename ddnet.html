@@ -172,7 +172,7 @@
     }
 
     function remove_textbox() {
-        latest_player_number = get_num_textboxes()
+        let latest_player_number = get_num_textboxes()
 
         if (latest_player_number == -1) {
             window.alert("Error removing player textbox")
@@ -187,6 +187,30 @@
         }
         latest_div.remove()
     }
+
+    function loadUsernamesFromStorage() {
+        // Load last used usernames on page load
+        usernames_list = JSON.parse(localStorage.getItem("usernames"));
+        if (!usernames_list) {
+            return
+        }
+        let num_textboxes = get_num_textboxes();
+        let num_usernames = usernames_list.length
+        while (num_textboxes > num_usernames) {
+            remove_textbox()
+            num_textboxes = get_num_textboxes();
+        }
+        while (num_textboxes < num_usernames) {
+            add_textbox()
+            num_textboxes = get_num_textboxes();
+        }
+
+        for (let index = 1; index <= num_textboxes; index++) {
+            const textinput_element = document.getElementById("text_player" + index)
+            textinput_element.value = usernames_list[index-1]
+        }
+    }
+    loadUsernamesFromStorage()
 
     function search() {
         let num_textboxes = get_num_textboxes()
@@ -205,6 +229,9 @@
             }
             usernames_list.push(username)
         }
+
+        // Save usernames to local storage for next load
+        localStorage.setItem("usernames", JSON.stringify(usernames_list));
 
         results_section_div.style.display = "block"
 
