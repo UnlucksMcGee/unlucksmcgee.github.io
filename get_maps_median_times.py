@@ -1,3 +1,4 @@
+import datetime
 import time
 import urllib.parse
 import html
@@ -35,11 +36,20 @@ else:
 
 url = "https://ddnet.org/maps/?json="
 for i, map_name in enumerate(all_map_names):
-    # Skip map name if it already has been fetched
     print(i+1 , len(all_map_names))
 
+    # Skip map name if it already has been fetched and if more than 90 days old
     if map_name in all_map_json_data:
-        continue
+        try:
+            if all_map_json_data[map_name]["release"] is None:
+                continue
+            elif datetime.datetime.fromtimestamp(all_map_json_data[map_name]["release"]) < (datetime.datetime.now() - datetime.timedelta(days=90)):
+                continue
+            else:
+                pass
+        except Exception as e:
+            print("Error checking release:", e)
+            pass
         
     map_name_escaped = urllib.parse.quote(map_name)
 
