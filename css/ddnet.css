@@ -135,6 +135,48 @@ td>a:hover {
     box-shadow: 0px 0px 6px 0px rgba(0, 0, 0, 0.5);
 }
 
+.highlighted {
+    border: 0.5rem solid rgb(193 114 0) !important;
+}
+
+#results_sorting_buttons_div {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+#results_sorting_buttons_div>* {
+    margin: 0.1rem 0.1rem;
+    width: fit-content;
+    box-shadow: 0px 0px 6px 0px rgba(0, 0, 0, 0.5);
+    background-color: var(--extra_colour);
+    border-radius: 0.5rem;
+    display: inline-block;
+}
+
+#results_sorting_buttons_div>*:hover {
+    background-color: var(--extra_colour_hover);
+}
+
+#results_sorting_buttons_div * {
+    cursor: pointer;
+}
+
+#results_sorting_buttons_div label {
+    display: inline-block;
+    padding-right: 0.5rem;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+}
+
+#results_sorting_buttons_div input {
+    display: inline-block;
+    margin-left: 0.5rem;
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
 #player_results_div {
     display: flex;
     flex-direction: row;

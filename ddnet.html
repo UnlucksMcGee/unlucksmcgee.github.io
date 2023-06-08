@@ -103,6 +103,25 @@
             <div style="text-align: center;" id="results_shortcut_links_div"></div>
             <br>
             <br>
+            <div style="text-align: center; display: none;" id="results_sorting_buttons_div">
+                <div title='"Easiest" means least points and then most finishes'>
+                    <input type="radio" id="sorting_easiest" name="sorting_list" value="easiest" checked onclick="display_results('sorting_easiest');">
+                    <label for="sorting_easiest">Sort by "easiest"</label>
+                </div>
+                <div>
+                    <input type="radio" id="sorting_name" name="sorting_list" value="name" checked onclick="display_results('sorting_name');">
+                    <label for="sorting_name">Sort by name</label>
+                </div>
+                <div>
+                    <input type="radio" id="sorting_most_finishes" name="sorting_list" value="most_finishes" onclick="display_results('sorting_most_finishes');">
+                    <label for="sorting_most_finishes">Sort by most finishes</label>
+                </div>
+                <div>
+                    <input type="radio" id="sorting_median_time" name="sorting_list" value="median_time" onclick="display_results('sorting_median_time');">
+                    <label for="sorting_median_time">Sort by shortest median time</label>
+                </div>
+            </div>
+            <br>
             <div id="map_results_div"></div>
             <p id="map_data_last_updated_p">Map times last updated: </p>
         </div>
@@ -120,7 +139,11 @@
     var results_section_div = document.getElementById("results_section_div")
     var map_results_div = document.getElementById("map_results_div")
     var results_shortcut_links_div = document.getElementById("results_shortcut_links_div")
+    var results_sorting_buttons_div = document.getElementById("results_sorting_buttons_div")
     var player_results_div = document.getElementById("player_results_div")
+    var common_unfinished_maps_dict = {}
+    var unfinished_map_details_dict = {} //first key is server type e.g. Novice, nested key is map name with details
+    var player_points = {}
 
     let map_data_last_updated_p = document.getElementById("map_data_last_updated_p")
     map_data_last_updated_p.innerHTML += map_data_last_updated
@@ -238,6 +261,7 @@
         map_results_div.innerHTML = "<div class='loading-spinner'></div>"
         results_shortcut_links_div.innerHTML = ""
         player_results_div.innerHTML = "<div class='loading-spinner'></div>"
+        results_sorting_buttons_div.style.display = "none"
 
         const get_all_players_json = async () => {
             try {
@@ -247,9 +271,9 @@
                 console.log("Processing...")
                 let all_players_json_list = response_json
 
-                let unfinished_map_details_dict = {} //first key is server type e.g. Novice, nested key is map name with details
+                unfinished_map_details_dict = {} //first key is server type e.g. Novice, nested key is map name with details
                 let player_unfinished_maps_dict = {} // first key is username, nested key is server type e.g. Novice, double-nested key is map name
-                let player_points = {}
+                player_points = {}
                 for (let user_index = 0; user_index < usernames_list.length; user_index++) {
                     let username = usernames_list[user_index];
                     user_json = all_players_json_list[user_index]
@@ -283,7 +307,7 @@
                 }
 
                 // Filter unfinished maps by commonality
-                let common_unfinished_maps_dict = {}
+                common_unfinished_maps_dict = {}
 
                 // Fill dict with first player's unfinished maps
                 common_unfinished_maps_dict = player_unfinished_maps_dict[usernames_list[0]]
@@ -294,148 +318,7 @@
                     }
                 }
                 console.log(common_unfinished_maps_dict)
-
-                // Sort by points ASC and then by finishes DESC
-                for (const server_type in common_unfinished_maps_dict) {
-                    function compare_points_and_finishes(a, b) {
-                        if (unfinished_map_details_dict[server_type][a]["points"] < unfinished_map_details_dict[server_type][b]["points"]) {
-                            return -1;
-                        }
-                        if (unfinished_map_details_dict[server_type][a]["points"] > unfinished_map_details_dict[server_type][b]["points"]) {
-                            return 1;
-                        }
-                        if (unfinished_map_details_dict[server_type][a]["total_finishes"] < unfinished_map_details_dict[server_type][b]["total_finishes"]) {
-                            return 1;
-                        }
-                        if (unfinished_map_details_dict[server_type][a]["total_finishes"] > unfinished_map_details_dict[server_type][b]["total_finishes"]) {
-                            return -1;
-                        }
-                        return 0;
-                    }
-
-                    // Convert into array/list
-                    common_unfinished_maps_dict[server_type] = Array.from(common_unfinished_maps_dict[server_type])
-                    common_unfinished_maps_dict[server_type].sort(compare_points_and_finishes)
-                }
-
-                map_results_div.innerHTML = ""
-                results_shortcut_links_div.innerHTML = ""
-                player_results_div.innerHTML = ""
-
-                // Create player links
-                for (const username of usernames_list) {
-                    let new_shortcut = document.createElement("a")
-                    new_shortcut.setAttribute("href", "https://ddnet.org/players/" + username)
-                    new_shortcut.setAttribute("target", "_blank")
-                    new_shortcut.setAttribute("title", "Open player page on ddnet.org")
-                    new_shortcut.setAttribute("class", "player_link")
-                    new_shortcut.innerHTML = username + " (" + player_points[username] +"pts)"
-                    player_results_div.appendChild(new_shortcut)
-                }
-
-                for (const server_type in common_unfinished_maps_dict) {
-                    if (common_unfinished_maps_dict[server_type].length == 0) {
-                        // Skip creating section for empty table
-                        continue
-                    }
-
-                    // Create shortcut links
-                    let new_shortcut = document.createElement("a")
-                    new_shortcut.setAttribute("href", "#" + server_type)
-                    new_shortcut.innerHTML = server_type + " (" + common_unfinished_maps_dict[server_type].length + ")"
-                    results_shortcut_links_div.appendChild(new_shortcut)
-
-                    // Create tables
-                    let new_section_div = document.createElement("div")
-                    new_section_div.setAttribute("class", "map_section")
-                    let new_header = document.createElement("h3")
-                    new_header.innerHTML = server_type + " (" + common_unfinished_maps_dict[server_type].length + ")"
-                    new_header.id = server_type
-                    new_header.style = "text-align: center"
-                    let new_table = document.createElement("table")
-
-                    let tr = document.createElement("tr")
-                    for (header_title of ["Map Name", "Points", "Finishes", "Median/Top Time"]) {
-                        let th = document.createElement("th")
-                        th.innerHTML = header_title
-                        tr.appendChild(th)
-                    }
-                    new_table.appendChild(tr)
-
-                    for (const map_name of common_unfinished_maps_dict[server_type]) {
-                        let tr = document.createElement("tr")
-                        let td = document.createElement("td")
-                        let new_map_shortcut = document.createElement("a")
-                        new_map_shortcut.setAttribute("target", "_blank")
-                        if (map_data.hasOwnProperty(map_name) && map_data[map_name].hasOwnProperty("website")) {
-                            new_map_shortcut.setAttribute("href", map_data[map_name]["website"])
-                        }
-                        
-                        new_map_shortcut.innerHTML = map_name
-                        td.appendChild(new_map_shortcut)
-                        tr.appendChild(td)
-
-                        td = document.createElement("td")
-                        td.innerHTML = unfinished_map_details_dict[server_type][map_name]["points"]
-                        tr.appendChild(td)
-
-                        td = document.createElement("td")
-                        td.innerHTML = unfinished_map_details_dict[server_type][map_name]["total_finishes"]
-                        tr.appendChild(td)
-
-                        td = document.createElement("td")
-                        let median_time = null
-                        let top_time = null
-                        if (map_data.hasOwnProperty(map_name) && map_data[map_name].hasOwnProperty("median_time")) {
-                            median_time = map_data[map_name]["median_time"]
-                        }
-                        if (map_data.hasOwnProperty(map_name) && map_data[map_name].hasOwnProperty("fastest_team_finish")) {
-                            if (top_time != null) {
-                                top_time = Math.min(top_time, map_data[map_name]["fastest_team_finish"])
-                            } else {
-                                top_time = map_data[map_name]["fastest_team_finish"]
-                            }
-                        }
-                        if (map_data.hasOwnProperty(map_name) && map_data[map_name].hasOwnProperty("fastest_rank_finish")) {
-                            if (top_time != null) {
-                                top_time = Math.min(top_time, map_data[map_name]["fastest_rank_finish"])
-                            } else {
-                                top_time = map_data[map_name]["fastest_rank_finish"]
-                            }
-                        }
-                        if (median_time != null) {
-                            if (median_time < 3600) {
-                                median_time = new Date(median_time * 1000).toISOString().substring(14, 19)
-                            } else {
-                                median_time = new Date(median_time * 1000).toISOString().substring(11, 19)
-                            }
-                        } else {
-                            median_time = "?"
-                        }
-
-                        if (top_time != null) {
-                            if (top_time < 3600) {
-                                top_time = new Date(top_time * 1000).toISOString().substring(14, 19)
-                            } else {
-                                top_time = new Date(top_time * 1000).toISOString().substring(11, 19)
-                            }
-                        } else {
-                            top_time = "?"
-                        }
-                        td.innerHTML = median_time + " / " + top_time
-                        tr.appendChild(td)
-
-                        new_table.appendChild(tr)
-                    }
-
-                    new_section_div.appendChild(new_header)
-                    new_section_div.appendChild(new_table)
-
-                    map_results_div.appendChild(new_section_div)
-                }
-                if (map_results_div.innerHTML == "") {
-                    map_results_div.innerHTML = "None"
-                }
+                display_results("sorting_easiest")
 
             } catch (err) {
                 window.alert("Error")
@@ -443,6 +326,208 @@
             }
         }
         get_all_players_json()
+    }
+
+    function display_results(radio_button_id) {
+        let radio_buttons = document.getElementsByName("sorting_list")
+        for (const radio_button of radio_buttons) {
+            radio_button.checked = false
+        }
+        
+        let current_radio_button = document.getElementById(radio_button_id)
+        current_radio_button.checked = true
+        
+        // Sort by points ASC and then by finishes DESC
+        for (const server_type in common_unfinished_maps_dict) {
+            if (radio_button_id == "sorting_easiest") {
+                function compare_points_and_finishes(a, b) {
+                    if (unfinished_map_details_dict[server_type][a]["points"] < unfinished_map_details_dict[server_type][b]["points"]) {
+                        return -1;
+                    }
+                    if (unfinished_map_details_dict[server_type][a]["points"] > unfinished_map_details_dict[server_type][b]["points"]) {
+                        return 1;
+                    }
+                    if (unfinished_map_details_dict[server_type][a]["total_finishes"] < unfinished_map_details_dict[server_type][b]["total_finishes"]) {
+                        return 1;
+                    }
+                    if (unfinished_map_details_dict[server_type][a]["total_finishes"] > unfinished_map_details_dict[server_type][b]["total_finishes"]) {
+                        return -1;
+                    }
+                    return 0;
+                }
+            } else if (radio_button_id == "sorting_name") {
+                function compare_points_and_finishes(a, b) {
+                    return a.localeCompare(b, undefined, { numeric: true })
+                }
+            } else if (radio_button_id == "sorting_most_finishes") {
+                function compare_points_and_finishes(a, b) {
+                    if (unfinished_map_details_dict[server_type][a]["total_finishes"] < unfinished_map_details_dict[server_type][b]["total_finishes"]) {
+                        return 1;
+                    }
+                    if (unfinished_map_details_dict[server_type][a]["total_finishes"] > unfinished_map_details_dict[server_type][b]["total_finishes"]) {
+                        return -1;
+                    }
+                    return 0;
+                }
+            } else if (radio_button_id == "sorting_median_time") {
+                function compare_points_and_finishes(a, b) {
+                    if (map_data.hasOwnProperty(a) && map_data[a].hasOwnProperty("median_time")) {
+                        median_time_a = map_data[a]["median_time"]
+                    } else {
+                        median_time_a = 9e99
+                    }
+                    if (map_data.hasOwnProperty(b) && map_data[b].hasOwnProperty("median_time")) {
+                        median_time_b = map_data[b]["median_time"]
+                    } else {
+                        median_time_b = 9e99
+                    }
+                    if (median_time_a > median_time_b) {
+                        return 1;
+                    }
+                    if (median_time_a < median_time_b) {
+                        return -1;
+                    }
+                    return 0;
+                }
+            } else {
+                1/0 // raise error
+            }
+
+            // Convert into array/list
+            common_unfinished_maps_dict[server_type] = Array.from(common_unfinished_maps_dict[server_type])
+            common_unfinished_maps_dict[server_type].sort(compare_points_and_finishes)
+        }
+
+        map_results_div.innerHTML = ""
+        results_shortcut_links_div.innerHTML = ""
+        player_results_div.innerHTML = ""
+
+        // Create player links
+        for (const username of usernames_list) {
+            let new_shortcut = document.createElement("a")
+            new_shortcut.setAttribute("href", "https://ddnet.org/players/" + username)
+            new_shortcut.setAttribute("target", "_blank")
+            new_shortcut.setAttribute("title", "Open player page on ddnet.org")
+            new_shortcut.setAttribute("class", "player_link")
+            new_shortcut.innerHTML = username + " (" + player_points[username] +"pts)"
+            player_results_div.appendChild(new_shortcut)
+        }
+
+        for (const server_type in common_unfinished_maps_dict) {
+            if (common_unfinished_maps_dict[server_type].length == 0) {
+                // Skip creating section for empty table
+                continue
+            }
+
+            // Create shortcut links
+            let new_shortcut = document.createElement("a")
+            new_shortcut.setAttribute("href", "#" + server_type)
+            new_shortcut.setAttribute("class", "server_type_class")
+            new_shortcut.setAttribute("onclick", "highlight_server_type('"+server_type+"')")
+            new_shortcut.innerHTML = server_type + " (" + common_unfinished_maps_dict[server_type].length + ")"
+            results_shortcut_links_div.appendChild(new_shortcut)
+
+            // Create tables
+            let new_section_div = document.createElement("div")
+            new_section_div.setAttribute("class", "map_section")
+            new_section_div.id = server_type
+            let new_header = document.createElement("h3")
+            new_header.innerHTML = server_type + " (" + common_unfinished_maps_dict[server_type].length + ")"
+            new_header.style = "text-align: center"
+            let new_table = document.createElement("table")
+
+            let tr = document.createElement("tr")
+            for (header_title of ["Map Name", "Points", "Finishes", "Median/Top Time"]) {
+                let th = document.createElement("th")
+                th.innerHTML = header_title
+                tr.appendChild(th)
+            }
+            new_table.appendChild(tr)
+
+            for (const map_name of common_unfinished_maps_dict[server_type]) {
+                let tr = document.createElement("tr")
+                let td = document.createElement("td")
+                let new_map_shortcut = document.createElement("a")
+                new_map_shortcut.setAttribute("target", "_blank")
+                if (map_data.hasOwnProperty(map_name) && map_data[map_name].hasOwnProperty("website")) {
+                    new_map_shortcut.setAttribute("href", map_data[map_name]["website"])
+                }
+                
+                new_map_shortcut.innerHTML = map_name
+                td.appendChild(new_map_shortcut)
+                tr.appendChild(td)
+
+                td = document.createElement("td")
+                td.innerHTML = unfinished_map_details_dict[server_type][map_name]["points"]
+                tr.appendChild(td)
+
+                td = document.createElement("td")
+                td.innerHTML = unfinished_map_details_dict[server_type][map_name]["total_finishes"]
+                tr.appendChild(td)
+
+                td = document.createElement("td")
+                let median_time = null
+                let top_time = null
+                if (map_data.hasOwnProperty(map_name) && map_data[map_name].hasOwnProperty("median_time")) {
+                    median_time = map_data[map_name]["median_time"]
+                }
+                if (map_data.hasOwnProperty(map_name) && map_data[map_name].hasOwnProperty("fastest_team_finish")) {
+                    if (top_time != null) {
+                        top_time = Math.min(top_time, map_data[map_name]["fastest_team_finish"])
+                    } else {
+                        top_time = map_data[map_name]["fastest_team_finish"]
+                    }
+                }
+                if (map_data.hasOwnProperty(map_name) && map_data[map_name].hasOwnProperty("fastest_rank_finish")) {
+                    if (top_time != null) {
+                        top_time = Math.min(top_time, map_data[map_name]["fastest_rank_finish"])
+                    } else {
+                        top_time = map_data[map_name]["fastest_rank_finish"]
+                    }
+                }
+                if (median_time != null) {
+                    if (median_time < 3600) {
+                        median_time = new Date(median_time * 1000).toISOString().substring(14, 19)
+                    } else {
+                        median_time = new Date(median_time * 1000).toISOString().substring(11, 19)
+                    }
+                } else {
+                    median_time = "?"
+                }
+
+                if (top_time != null) {
+                    if (top_time < 3600) {
+                        top_time = new Date(top_time * 1000).toISOString().substring(14, 19)
+                    } else {
+                        top_time = new Date(top_time * 1000).toISOString().substring(11, 19)
+                    }
+                } else {
+                    top_time = "?"
+                }
+                td.innerHTML = median_time + " / " + top_time
+                tr.appendChild(td)
+
+                new_table.appendChild(tr)
+            }
+
+            new_section_div.appendChild(new_header)
+            new_section_div.appendChild(new_table)
+
+            map_results_div.appendChild(new_section_div)
+        }
+        if (map_results_div.innerHTML == "") {
+            map_results_div.innerHTML = "None"
+        }
+        results_sorting_buttons_div.style.display = "block"
+    }
+
+    function highlight_server_type(element_id) {
+        all_servers = document.getElementsByClassName("map_section")
+        for (server of all_servers) {
+            server.classList.remove("highlighted")
+        }
+        current_server = document.getElementById(element_id)
+        current_server.classList.add("highlighted")
     }
 </script>
 
