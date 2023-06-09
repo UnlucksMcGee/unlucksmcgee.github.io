@@ -144,7 +144,8 @@
     var common_unfinished_maps_dict = {}
     var unfinished_map_details_dict = {} //first key is server type e.g. Novice, nested key is map name with details
     var player_points = {}
-
+    var usernames_list = []
+    
     let map_data_last_updated_p = document.getElementById("map_data_last_updated_p")
     map_data_last_updated_p.innerHTML += map_data_last_updated
 
@@ -238,7 +239,7 @@
     function search() {
         let num_textboxes = get_num_textboxes()
 
-        let usernames_list = []
+        usernames_list = []
         for (let index = 1; index <= num_textboxes; index++) {
             const textinput_element = document.getElementById("text_player" + index)
             if (textinput_element == null) {
