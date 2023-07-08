@@ -1,3 +1,8 @@
+function escapeRegExp(string) {
+  // https://stackoverflow.com/a/6969486
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
+}
+
 /* From https://www.w3schools.com/howto/howto_js_autocomplete.asp */
 
 function autocomplete(inp, arr) {
@@ -7,6 +12,8 @@ function autocomplete(inp, arr) {
   /*execute a function when someone writes in the text field:*/
   inp.addEventListener("input", function(e) {
       var a, b, i, val = this.value;
+      // Escape regex characters in search
+      val = escapeRegExp(val)
       /*close any already open lists of autocompleted values*/
       closeAllLists();
       if (!val) { return false;}
