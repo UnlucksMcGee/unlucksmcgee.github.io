@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Numbers Game</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        text-align: center;
+    }
+    .container {
+        margin-top: 50px;
+    }
+    input[type="text"] {
+        margin-bottom: 10px;
+    }
+    #results {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    .player {
+        margin: 5px;
+        background-color: antiquewhite;
+        border-radius: 1rem;
+    }
+
+    #results, .reveal-btn {
+        font-size: 3rem;
+    }
+
+</style>
+</head>
+<body>
+
+<div class="container">
+    <input type="text" id="start-number" placeholder="Start Number">
+    <input type="text" id="end-number" placeholder="End Number">
+    <br/>
+    <input type="checkbox" id="imposter-checkbox">
+    <label for="imposter-checkbox">Let Imposter Know</label>
+    <br/>
+    <div id="players-container">
+        <input type="text" class="player-input" placeholder="Player 1">
+        <input type="text" class="player-input" placeholder="Player 2">
+        <input type="text" class="player-input" placeholder="Player 3">
+        <input type="text" class="player-input" placeholder="Player 4">
+        <input type="text" class="player-input" placeholder="Player 5">
+        <input type="text" class="player-input" placeholder="Player 6">
+        <input type="text" class="player-input" placeholder="Player 7">
+        <input type="text" class="player-input" placeholder="Player 8">
+        <input type="text" class="player-input" placeholder="Player 9">
+        <input type="text" class="player-input" placeholder="Player 10">
+    </div>
+    <button id="go-btn">GO</button>
+    <br/><br/><br/>
+    <div id="results"></div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var savedStartNumber = localStorage.getItem('startNumber');
+        var savedEndNumber = localStorage.getItem('endNumber');
+        if (savedStartNumber && savedEndNumber) {
+            document.getElementById('start-number').value = savedStartNumber;
+            document.getElementById('end-number').value = savedEndNumber;
+        }
+
+        var savedPlayers = localStorage.getItem('players');
+        if (savedPlayers) {
+            var players = JSON.parse(savedPlayers);
+            var playerInputs = document.querySelectorAll('.player-input');
+            playerInputs.forEach(function(input, index) {
+                input.value = players[index] || '';
+            });
+        }
+    });
+
+
+    document.getElementById('go-btn').addEventListener('click', function() {
+        var resultsContainer = document.getElementById('results');
+        resultsContainer.innerHTML = '';
+
+        var letImposterKnow = document.getElementById('imposter-checkbox').checked;
+
+        var startNumber = parseInt(document.getElementById('start-number').value);
+        var endNumber = parseInt(document.getElementById('end-number').value);
+        var playerInputs = document.querySelectorAll('.player-input');
+
+        localStorage.setItem('startNumber', startNumber);
+        localStorage.setItem('endNumber', endNumber);
+
+        var numbers = [];
+        for (var i = startNumber; i <= endNumber; i++) {
+            numbers.push(i);
+        }
+        var imposterIndex = Math.floor(Math.random() * numbers.length);
+        var imposterNumber = numbers[imposterIndex];
+        numbers.splice(imposterIndex, 1); // Remove the imposter number
+
+        var crewmateIndex = Math.floor(Math.random() * numbers.length);
+        var crewmateNumber = numbers[crewmateIndex]
+
+        var players = [];
+        playerInputs.forEach(function(input) {
+            var playerName = input.value.trim();
+            if (playerName !== '') {
+                players.push(playerName);
+            }
+        });
+
+        localStorage.setItem('players', JSON.stringify(players));
+
+        var imposterPlayerIndex = Math.floor(Math.random() * players.length);
+
+
+
+        players.forEach(function(player, index) {
+            var playerDiv = document.createElement('div');
+            playerDiv.classList.add('player');
+            playerDiv.innerHTML = '<p>' + player + '</p><button class="reveal-btn">Reveal</button><p class="number" style="display:block;">?</p>';
+            resultsContainer.appendChild(playerDiv);
+
+            var revealBtn = playerDiv.querySelector('.reveal-btn');
+            var numberP = playerDiv.querySelector('.number');
+
+            revealBtn.addEventListener('click', function() {
+                if (revealBtn.textContent === "Hide") {
+                    numberP.remove()
+                    revealBtn.remove()
+                    // Enable remaining Reveal buttons
+                    let reveal_buttons = document.getElementsByClassName("reveal-btn")
+                    for (reveal_button of reveal_buttons) {
+                        reveal_button.disabled = false
+                    }
+                    return
+                }
+                if (imposterPlayerIndex === index) {
+                    numberP.textContent = imposterNumber
+                    if (letImposterKnow) {
+                        numberP.textContent += " (imposter)"
+                    }
+                } else {
+                    numberP.textContent = crewmateNumber
+                }
+
+                revealBtn.textContent = 'Hide';
+
+                // Disable all Reveal buttons
+                let reveal_buttons = document.getElementsByClassName("reveal-btn")
+                for (reveal_button of reveal_buttons) {
+                    if (reveal_button.textContent == "Reveal") {
+                        reveal_button.disabled = true
+                    }
+                }
+            });
+        });
+    });
+</script>
+
+</body>
+</html>
