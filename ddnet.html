@@ -99,7 +99,7 @@
             <h3 style="text-align: center; margin-bottom: 1rem;">Players</h3>
             <div style="text-align: center;" id="player_results_div"></div>
             <br>
-            <h3 style="text-align: center; margin-bottom: 1rem;">Maps</h3>
+            <h3 style="text-align: center; margin-bottom: 1rem;">Unfinished Maps</h3>
             <div style="text-align: center;" id="results_shortcut_links_div"></div>
             <br>
             <br>
@@ -145,7 +145,7 @@
     var unfinished_map_details_dict = {} //first key is server type e.g. Novice, nested key is map name with details
     var player_points = {}
     var usernames_list = []
-    
+
     let map_data_last_updated_p = document.getElementById("map_data_last_updated_p")
     map_data_last_updated_p.innerHTML += map_data_last_updated
 
@@ -329,15 +329,31 @@
         get_all_players_json()
     }
 
+    function unicodeToURLAllowed(input) {
+        let result = '';
+        for (let i = 0; i < input.length; i++) {
+            const charCode = input.charCodeAt(i);
+            if ((charCode >= 48 && charCode <= 57) || // 0-9
+                (charCode >= 65 && charCode <= 90) || // A-Z
+                (charCode >= 97 && charCode <= 122) || // a-z
+                charCode === 126) { // ~
+                result += input[i];
+            } else {
+                result += `-${charCode}-`;
+            }
+        }
+        return result;
+    }
+
     function display_results(radio_button_id) {
         let radio_buttons = document.getElementsByName("sorting_list")
         for (const radio_button of radio_buttons) {
             radio_button.checked = false
         }
-        
+
         let current_radio_button = document.getElementById(radio_button_id)
         current_radio_button.checked = true
-        
+
         // Sort by points ASC and then by finishes DESC
         for (const server_type in common_unfinished_maps_dict) {
             if (radio_button_id == "sorting_easiest") {
@@ -406,7 +422,7 @@
         // Create player links
         for (const username of usernames_list) {
             let new_shortcut = document.createElement("a")
-            new_shortcut.setAttribute("href", "https://ddnet.org/players/" + username)
+            new_shortcut.setAttribute("href", "https://ddnet.org/players/" + unicodeToURLAllowed(username))
             new_shortcut.setAttribute("target", "_blank")
             new_shortcut.setAttribute("title", "Open player page on ddnet.org")
             new_shortcut.setAttribute("class", "player_link")
@@ -452,8 +468,10 @@
                 new_map_shortcut.setAttribute("target", "_blank")
                 if (map_data.hasOwnProperty(map_name) && map_data[map_name].hasOwnProperty("website")) {
                     new_map_shortcut.setAttribute("href", map_data[map_name]["website"])
+                } else {
+                    new_map_shortcut.setAttribute("href", "https://ddnet.org/maps/" + unicodeToURLAllowed(map_name))
                 }
-                
+
                 new_map_shortcut.innerHTML = map_name
                 td.appendChild(new_map_shortcut)
                 tr.appendChild(td)
