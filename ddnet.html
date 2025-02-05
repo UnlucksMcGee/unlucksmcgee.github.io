@@ -78,6 +78,16 @@
         <br>
         <h2 style="text-align: center;">Find unfinished maps in common between 1 or more players.</h2>
         <br>
+        <div style="text-align: center;">
+            <input type="checkbox" id="show_hide_usernames" onclick="document.getElementById('server_names_div').style.display = this.checked ? 'block' : 'none'; if (this.checked) {loadServerNames()};">
+            <label for="show_hide_usernames">Load names from server</label>
+            <div id="server_names_div" style="display: none;">
+                <button id="server_names_refresh_button" class="hover_button button_blue" style="font-weight: bold;" disabled onclick="loadServerNames()">⟳</button>
+                <select id="server_selection_dropdown">
+                    <option selected value="none">Loading...</option>
+                </select>
+                <button class="hover_button button_green" onclick="loadNamesFromSelectedServer()">Load names from this server</button>
+        </div>
         <br>
         <div
             style="margin: 0 auto; width: fit-content; padding: 1rem; background-color: var(--secondary_colour); border-radius: 1rem; box-shadow: 0px 0px 6px 0px rgba(0, 0, 0, 0.5);">
@@ -180,8 +190,8 @@
         if (latest_player_number == -1) {
             window.alert("Error adding player textbox")
             return
-        } else if (latest_player_number == 10) {
-            window.alert("Max 10 players allowed.")
+        } else if (latest_player_number == 64) {
+            window.alert("Max 64 players allowed.")
             return
         }
 
@@ -559,6 +569,73 @@
         current_server = document.getElementById(element_id)
         current_server.classList.add("highlighted")
     }
+
+    function loadServerNames() {
+        // Load servers and usernames from https://master1.ddnet.org/ddnet/15/servers.json
+        // Filter servers by location (only show servers with location "af:za")
+        // Filter servers by game_type (only show servers with game_type "DDraceNetwork")
+        // Filter servers by number of clients (only show servers with more than 0 clients)
+        // Parse JSON and fill dropdown box with server names (with some players names in brackets)
+        let server_selection_dropdown = document.getElementById("server_selection_dropdown")
+        server_selection_dropdown.innerHTML = "<option selected value='none'>Loading</option>"
+        const MAX_PLAYER_DISPLAY_COUNT = 5;
+        document.getElementById("server_names_refresh_button").disabled = true
+        fetch("https://master1.ddnet.org/ddnet/15/servers.json")
+            .then(response => response.json())
+            .then(data => {
+                server_selection_dropdown.innerHTML = "<option selected value='none'>Select server</option>"
+                for (const server of data["servers"]) {
+                    if (server["location"] != "af:za") {
+                        continue
+                    }
+                    if (server["info"]["game_type"] != "DDraceNetwork") {
+                        continue
+                    }
+                    if (server["info"]["clients"].length == 0) {
+                        continue
+                    }
+                    let server_name = server["info"]["name"]
+                    let server_players = server["info"]["clients"].slice(0, MAX_PLAYER_DISPLAY_COUNT).map(player => player["name"]).join(", ")
+                    let new_option = document.createElement("option")
+                    new_option.value = JSON.stringify(server["info"]["clients"].map(player => player["name"]))
+                    new_option.innerHTML = server_name + "(" + server["info"]["clients"].length + "): " + server_players
+                    if (server["info"]["clients"].length > MAX_PLAYER_DISPLAY_COUNT) {
+                        new_option.innerHTML += "..."
+                    }
+                    server_selection_dropdown.appendChild(new_option)
+                }
+                document.getElementById("server_names_refresh_button").disabled = false
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById("server_names_refresh_button").disabled = false
+            });
+    }
+
+    function loadNamesFromSelectedServer() {
+        let server_selection_dropdown = document.getElementById("server_selection_dropdown")
+        let selected_server = server_selection_dropdown.options[server_selection_dropdown.selectedIndex].value
+        if (selected_server == "none") {
+            return
+        }
+        let selected_server_players = JSON.parse(selected_server)
+        let num_textboxes = get_num_textboxes()
+        let num_usernames = selected_server_players.length
+        while (num_textboxes > num_usernames) {
+            remove_textbox()
+            num_textboxes = get_num_textboxes();
+        }
+        while (num_textboxes < num_usernames) {
+            add_textbox()
+            num_textboxes = get_num_textboxes();
+        }
+
+        for (let index = 1; index <= num_textboxes; index++) {
+            const textinput_element = document.getElementById("text_player" + index)
+            textinput_element.value = selected_server_players[index - 1]
+        }
+    }
+
 </script>
 
 </html>

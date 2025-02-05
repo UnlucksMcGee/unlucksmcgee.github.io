@@ -56,6 +56,18 @@ button.button_cyan:hover {
     background-color: var(--extra_colour_hover);
 }
 
+button.button_blue {
+    background-color: var(--link_background_color);
+}
+
+button.button_blue:hover {
+    background-color: var(--link_hover_color);
+}
+
+button.button_blue:disabled {
+    background-color: #ccc;
+}
+
 .textdiv>input {
     margin-bottom: 1rem;
 }
