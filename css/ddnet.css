@@ -16,7 +16,7 @@ html {
 button.hover_button {
     background-color: var(--link_background_color);
     border-radius: 0.5rem;
-    padding: 0.5rem;
+    padding: 0.2rem;
 }
 
 button.hover_button:hover {
@@ -69,7 +69,7 @@ button.button_blue:disabled {
 }
 
 .textdiv>input {
-    margin-bottom: 1rem;
+    margin-bottom: 0.25rem;
 }
 
 h3 {

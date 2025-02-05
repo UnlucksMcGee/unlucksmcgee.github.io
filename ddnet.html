@@ -87,7 +87,8 @@
                     <option selected value="none">Loading...</option>
                 </select>
                 <button class="hover_button button_green" onclick="loadNamesFromSelectedServer()">Load names from this server</button>
-        </div>
+            </div>
+        <br>
         <br>
         <div
             style="margin: 0 auto; width: fit-content; padding: 1rem; background-color: var(--secondary_colour); border-radius: 1rem; box-shadow: 0px 0px 6px 0px rgba(0, 0, 0, 0.5);">
@@ -95,18 +96,16 @@
 
                 <p>Enter player usernames here: (case-sensitive!)</p>
                 <br>
-                <div class="textdiv" id="div_player1" data-num=1>
-                    <label for="text_player1">Player 1:</label>
-                    <input type="text" id="text_player1" value="UnlucksMcGee">
+                <div class="textdiv">
+                    <input type="text" class="username_text_input" value="UnlucksMcGee"><button class="hover_button button_red" onclick="this.parentElement.remove()">X</button>
                 </div>
-                <div class="textdiv" id="div_player2" data-num=2>
-                    <label for="text_player1">Player 2:</label>
-                    <input type="text" id="text_player2" value="Eyesore">
+                <div class="textdiv">
+                    <input type="text" class="username_text_input" value="Eyesore"><button class="hover_button button_red" onclick="this.parentElement.remove()">X</button>
                 </div>
             </div>
+            <br>
             <div style="text-align: center;">
                 <button class="hover_button button_green" onclick="add_textbox()">&nbsp;+&nbsp;</button>
-                <button class="hover_button button_red" onclick="remove_textbox()">&nbsp;&nbsp;-&nbsp;&nbsp;</button>
                 <br>
                 <br>
                 <br>
@@ -148,13 +147,14 @@
         </div>
     </main>
     <footer>
-        <p>Copyright © 2023</p>
+        <p>Copyright © 2025</p>
     </footer>
 </body>
 
 <script>
-    autocomplete(document.getElementById("text_player1"), zaf_players);
-    autocomplete(document.getElementById("text_player2"), zaf_players);
+    for (const textinput_element of document.getElementsByClassName("username_text_input")) {
+        autocomplete(textinput_element, zaf_players);
+    }
 
     var textinputs_div = document.getElementById("textinputs")
     var results_section_div = document.getElementById("results_section_div")
@@ -171,66 +171,47 @@
     map_data_last_updated_p.innerHTML += map_data_last_updated
 
     function get_num_textboxes() {
-        let textdiv_elements = textinputs_div.getElementsByClassName("textdiv")
-        let latest_player_number = -1
-
-        for (const textdiv_element of textdiv_elements) {
-            cur_data_num = parseInt(textdiv_element.getAttribute("data-num"))
-            if (cur_data_num > latest_player_number) {
-                latest_player_number = cur_data_num
-            }
-        }
-
-        return parseInt(latest_player_number)
+        let textdivs = document.getElementsByClassName("textdiv")
+        return textdivs.length
     }
 
     function add_textbox() {
-        latest_player_number = get_num_textboxes()
-
-        if (latest_player_number == -1) {
-            window.alert("Error adding player textbox")
-            return
-        } else if (latest_player_number == 64) {
+        number_of_textboxes = get_num_textboxes()
+        if (number_of_textboxes == 64) {
             window.alert("Max 64 players allowed.")
             return
         }
 
-        let new_player_number = parseInt(latest_player_number) + 1
-        new_div = document.createElement("div")
+        let new_div = document.createElement("div")
         new_div.setAttribute("class", "textdiv")
-        new_div.setAttribute("id", "div_player" + new_player_number)
-        new_div.setAttribute("data-num", new_player_number)
 
-        new_input = document.createElement("input", { "type": "text", })
-        new_input.setAttribute("id", "text_player" + new_player_number)
+        let new_input = document.createElement("input", { "type": "text", })
         new_input.setAttribute("type", "text")
+        new_input.setAttribute("class", "username_text_input")
 
-        new_label = document.createElement("label")
-        new_label.setAttribute("for", "text_player" + new_player_number)
-        new_label.innerHTML = "Player " + new_player_number + ": "
+        let new_delete_button = document.createElement("button")
+        new_delete_button.setAttribute("class", "hover_button button_red")
+        new_delete_button.innerHTML = "X"
+        new_delete_button.onclick = function () {
+            this.parentElement.remove()
+        }
 
-        new_div.appendChild(new_label)
         new_div.appendChild(new_input)
+        new_div.appendChild(new_delete_button)
         textinputs_div.appendChild(new_div)
 
-        autocomplete(document.getElementById("text_player" + new_player_number), zaf_players);
+        autocomplete(new_input, zaf_players);
     }
 
     function remove_textbox() {
-        let latest_player_number = get_num_textboxes()
+        let number_of_textboxes = get_num_textboxes()
 
-        if (latest_player_number == -1) {
-            window.alert("Error removing player textbox")
-            return
-        } else if (latest_player_number == 1) {
+        if (number_of_textboxes == 1) {
             return
         }
 
-        latest_div = document.getElementById("div_player" + latest_player_number)
-        if (latest_div == null) {
-            window.alert("Error removing player textbox")
-        }
-        latest_div.remove()
+        let textdivs = document.getElementsByClassName("textdiv")
+        textdivs[textdivs.length - 1].remove()
     }
 
     function loadUsernamesFromStorage() {
@@ -238,6 +219,9 @@
         usernames_list = JSON.parse(localStorage.getItem("usernames"));
         if (!usernames_list) {
             return
+        }
+        if (usernames_list.length == 0) {
+            usernames_list = ["UnlucksMcGee", "Eyesore"]
         }
         let num_textboxes = get_num_textboxes();
         let num_usernames = usernames_list.length
@@ -250,9 +234,11 @@
             num_textboxes = get_num_textboxes();
         }
 
-        for (let index = 1; index <= num_textboxes; index++) {
-            const textinput_element = document.getElementById("text_player" + index)
-            textinput_element.value = usernames_list[index-1]
+        // Fill textboxes with usernames
+
+        let all_text_divs = document.getElementsByClassName("textdiv")
+        for (let index = 0; index < usernames_list.length; index++) {
+            all_text_divs[index].getElementsByTagName("input")[0].value = usernames_list[index]
         }
     }
     loadUsernamesFromStorage()
@@ -261,13 +247,10 @@
         let num_textboxes = get_num_textboxes()
 
         usernames_list = []
-        for (let index = 1; index <= num_textboxes; index++) {
-            const textinput_element = document.getElementById("text_player" + index)
-            if (textinput_element == null) {
-                console.log("error retrieving element")
-                continue
-            }
-            username = textinput_element.value
+
+        let all_text_divs = document.getElementsByClassName("textdiv")
+        for (let index = 0; index < num_textboxes; index++) {
+            let username = all_text_divs[index].getElementsByTagName("input")[0].value
             if (username == "") {
                 window.alert("Please fill in all the textboxes (or remove unused ones)")
                 return
@@ -630,9 +613,9 @@
             num_textboxes = get_num_textboxes();
         }
 
-        for (let index = 1; index <= num_textboxes; index++) {
-            const textinput_element = document.getElementById("text_player" + index)
-            textinput_element.value = selected_server_players[index - 1]
+        let all_text_divs = document.getElementsByClassName("textdiv")
+        for (let index = 0; index < num_usernames; index++) {
+            all_text_divs[index].getElementsByTagName("input")[0].value = selected_server_players[index]
         }
     }
 
