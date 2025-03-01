@@ -1,2 +1,4 @@
 # Ignore VSCode local settings
 .vscode/
+
+*.sqlite

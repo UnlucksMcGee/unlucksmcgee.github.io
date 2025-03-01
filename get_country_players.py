@@ -7,12 +7,14 @@ if len(sys.argv) < 2:
 db_path = sys.argv[1]
 con = sqlite3.connect(db_path)
 cur = con.cursor()
-cur.execute("SELECT * FROM (SELECT Name, COUNT(Name) as cof FROM race WHERE SERVER = 'ZAF' GROUP BY Name) WHERE cof > 10 ORDER BY cof DESC")
+cur.execute(
+    "SELECT * FROM (SELECT Name, COUNT(Name) as cof FROM race WHERE SERVER = 'ZAF' GROUP BY Name) WHERE cof > 10 ORDER BY cof DESC"
+)
 
 rows = cur.fetchall()
 all_names = []
 for name, count in rows:
-    name = name.replace('"','\\"')
+    name = name.replace("\\", "\\\\").replace('"', '\\"')
     print(f"{name}: {count}")
     all_names.append(name)
 
