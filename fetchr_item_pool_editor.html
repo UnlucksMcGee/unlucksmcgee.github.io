@@ -1,0 +1,1890 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Fetchr Item Pool Editor — a visual editor for creating and editing Fetchr/Minecraft item pools. Edit weights, preview pools, and export JSON or ZIP for datapacks.">
+  <meta name="keywords" content="Fetchr, item pool, Minecraft, datapack, item editor, item pool editor">
+  <link rel="canonical" href="https://example.com/fetchr/item-pool-editor">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Fetchr Item Pool Editor">
+  <meta property="og:description" content="Visual editor for Fetchr item pools — edit weights, preview results, and export ready-to-use datapack ZIP files.">
+  <meta property="og:url" content="https://example.com/fetchr/item-pool-editor">
+  <meta property="og:site_name" content="Fetchr">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Fetchr Item Pool Editor">
+  <meta name="twitter:description" content="Visual editor for Fetchr item pools — edit weights, preview results, and export ready-to-use datapack ZIP files.">
+  <meta name="robots" content="index, follow">
+  <title>Fetchr Item Pool Editor</title>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg: #0d0d16;
+      --surface: #161625;
+      --surface2: #12121f;
+      --surface3: #0a0a14;
+      --border: #252540;
+      --border2: #363660;
+      --accent: #7c3aed;
+      --accent-h: #6d28d9;
+      --accent-light: #a78bfa;
+      --green: #16a34a;
+      --green-bg: #052e16;
+      --green-border: #166534;
+      --red: #dc2626;
+      --red-bg: #2d0a0a;
+      --red-border: #7f1d1d;
+      --amber: #d97706;
+      --amber-bg: #1c1000;
+      --amber-border: #92400e;
+      --blue: #3b82f6;
+      --blue-bg: #0d1c3a;
+      --blue-border: #1e3a8a;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --dim: #64748b;
+      --mono: 'Consolas', 'Monaco', 'Courier New', monospace;
+      --card-size: 95px;
+      --header-h: 96px;
+      --radius: 8px;
+    }
+
+    html {
+      font-size: 14px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* â”€â”€ HEADER â”€â”€ */
+    #header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      height: 52px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      flex-shrink: 0;
+    }
+
+    #header h1 {
+      font-size: 17px;
+      font-weight: 700;
+      white-space: nowrap;
+      letter-spacing: -.3px;
+    }
+
+    #header h1 span {
+      color: var(--accent-light);
+    }
+
+    .spacer {
+      flex: 1;
+    }
+
+    #header label {
+      font-size: 11px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    #header select,
+    #header input[type=text] {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      padding: 5px 8px;
+      font-size: 12px;
+      outline: none;
+    }
+
+    #header select:focus,
+    #header input[type=text]:focus {
+      border-color: var(--accent);
+    }
+
+    #download-btn {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 7px;
+      padding: 8px 18px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background .15s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    #download-btn:hover {
+      background: var(--accent-h);
+    }
+
+    /* â”€â”€ STATS BAR â”€â”€ */
+    #stats-bar {
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+      padding: 7px 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-shrink: 0;
+      flex-wrap: wrap;
+      font-size: 12px;
+      position: sticky;
+      top: 52px;
+      z-index: 90;
+    }
+
+    .stat {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .stat-val {
+      font-weight: 800;
+      font-size: 15px;
+    }
+
+    .sv-green {
+      color: #4ade80;
+    }
+
+    .sv-red {
+      color: #f87171;
+    }
+
+    .sv-amber {
+      color: #fbbf24;
+    }
+
+    .stat-label {
+      color: var(--muted);
+    }
+
+    .stat-sep {
+      width: 1px;
+      height: 22px;
+      background: var(--border);
+    }
+
+    #sim-badge {
+      padding: 3px 12px;
+      border-radius: 20px;
+      font-weight: 700;
+      font-size: 12px;
+    }
+
+    #sim-badge.ok {
+      background: var(--green-bg);
+      border: 1px solid var(--green-border);
+      color: #4ade80;
+    }
+
+    #sim-badge.warn {
+      background: var(--amber-bg);
+      border: 1px solid var(--amber-border);
+      color: #fbbf24;
+    }
+
+    #sim-badge.err {
+      background: var(--red-bg);
+      border: 1px solid var(--red-border);
+      color: #f87171;
+    }
+
+    /* â”€â”€ BODY LAYOUT â”€â”€ */
+    #body-wrap {
+      flex: 1;
+      display: flex;
+      align-items: flex-start;
+    }
+
+    /* â”€â”€ LEFT SIDEBAR â”€â”€ */
+    #sidebar {
+      width: 190px;
+      flex-shrink: 0;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      position: sticky;
+      top: 96px;
+      height: calc(100vh - 96px);
+      overflow: hidden;
+    }
+
+    #sidebar-header {
+      padding: 12px 14px 8px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .7px;
+      flex-shrink: 0;
+    }
+
+    #search-wrap {
+      padding: 0 10px 8px;
+      flex-shrink: 0;
+    }
+
+    #search-input {
+      width: 100%;
+      background: var(--surface3);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      padding: 7px 10px 7px 30px;
+      font-size: 12px;
+      outline: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: 9px center;
+    }
+
+    #search-input:focus {
+      border-color: var(--accent);
+    }
+
+    #cat-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 6px 10px;
+    }
+
+    .cat-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background .1s;
+      margin-bottom: 1px;
+      user-select: none;
+    }
+
+    .cat-item:hover {
+      background: rgba(124, 58, 237, .1);
+    }
+
+    .cat-item.active {
+      background: rgba(124, 58, 237, .18);
+    }
+
+    .cat-item .cat-name {
+      flex: 1;
+      font-size: 12px;
+      text-transform: capitalize;
+    }
+
+    .cat-item .cat-count {
+      font-size: 10px;
+      background: var(--surface3);
+      border-radius: 10px;
+      padding: 1px 6px;
+      color: var(--muted);
+      min-width: 22px;
+      text-align: center;
+    }
+
+    .cat-item.active .cat-count {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    #show-all-btn {
+      margin: 0 10px 6px;
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--muted);
+      padding: 6px;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all .1s;
+    }
+
+    #show-all-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent-light);
+    }
+
+    #sidebar-footer {
+      padding: 10px 10px 12px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .show-filter-btn {
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      background: var(--surface3);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      cursor: pointer;
+      text-align: left;
+      transition: all .1s;
+    }
+
+    .show-filter-btn:hover {
+      border-color: var(--accent);
+      color: var(--text);
+    }
+
+    .show-filter-btn.active {
+      background: rgba(124, 58, 237, .15);
+      border-color: var(--accent);
+      color: var(--accent-light);
+    }
+
+    #reset-all-btn {
+      padding: 7px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      cursor: pointer;
+      transition: all .15s;
+    }
+
+    #reset-all-btn:hover {
+      border-color: var(--red);
+      color: #f87171;
+      background: var(--red-bg);
+    }
+
+    /* â”€â”€ MAIN CONTENT â”€â”€ */
+    #content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    #content-scroll {
+      padding: 16px 20px;
+    }
+
+    /* ── GROUPS GRID ── */
+    #groups-wrap {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 14px;
+      align-items: start;
+    }
+
+    /* â”€â”€ CATEGORY SECTION â”€â”€ */
+    .cat-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      scroll-margin-top: calc(var(--header-h) + 12px);
+    }
+
+    .cat-section-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      cursor: pointer;
+      user-select: none;
+      background: var(--surface2);
+      border-left: 3px solid var(--accent);
+      transition: background .12s;
+    }
+
+    .cat-section-header:hover {
+      background: rgba(124, 58, 237, .1);
+    }
+
+    .cat-section-toggle {
+      color: var(--dim);
+      font-size: 12px;
+      transition: transform .2s;
+      display: inline-block;
+      width: 16px;
+    }
+
+    .cat-section-toggle.collapsed {
+      transform: rotate(-90deg);
+    }
+
+    .cat-section-title {
+      font-size: 14px;
+      font-weight: 700;
+      text-transform: capitalize;
+    }
+
+    .cat-section-count {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .cat-section-active {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      background: var(--green-bg);
+      border: 1px solid var(--green-border);
+      color: #4ade80;
+    }
+
+    .cat-section-active.some-off {
+      background: var(--amber-bg);
+      border-color: var(--amber-border);
+      color: #fbbf24;
+    }
+
+    .cat-section-active.all-off {
+      background: var(--red-bg);
+      border-color: var(--red-border);
+      color: #f87171;
+    }
+
+    .cat-items-grid-wrap {
+      padding: 8px;
+    }
+
+    .cat-items-grid-wrap.collapsed {
+      display: none;
+    }
+
+    .cat-items-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    /* -- ITEM CARD -- */
+    .item-card {
+      width: var(--card-size);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 6px 5px 5px;
+      position: relative;
+      transition: border-color .15s, opacity .15s;
+      cursor: default;
+    }
+
+    .item-card:hover {
+      border-color: var(--border2);
+    }
+
+    .item-card.disabled {
+      opacity: .45;
+    }
+
+    .item-card.modified {
+      border-color: var(--amber);
+    }
+
+    .item-card.disabled:not(.modified) {
+      border-color: var(--red-border);
+    }
+
+    /* item icon */
+    .item-icon {
+      width: 36px;
+      height: 36px;
+      image-rendering: pixelated;
+      object-fit: contain;
+      margin-bottom: 4px;
+      flex-shrink: 0;
+    }
+
+    .item-icon-fallback {
+      width: 36px;
+      height: 36px;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      background: var(--surface3);
+      border-radius: 5px;
+      flex-shrink: 0;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    /* item name */
+    .item-card-name {
+      font-size: 9px;
+      font-weight: 600;
+      text-align: center;
+      line-height: 1.3;
+      color: var(--text);
+      max-width: 100%;
+      word-break: break-word;
+      margin-bottom: 4px;
+      min-height: 22px;
+      max-height: 30px;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+    }
+
+    /* weight stepper */
+    .weight-stepper {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      border-radius: 5px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      width: 100%;
+      margin-bottom: 5px;
+    }
+
+    .wt-btn {
+      background: var(--surface2);
+      border: none;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1;
+      width: 22px;
+      height: 22px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background .1s, color .1s;
+      flex-shrink: 0;
+      user-select: none;
+    }
+
+    .wt-btn:hover {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .wt-btn:disabled {
+      opacity: .3;
+      cursor: default;
+    }
+
+    .wt-val {
+      flex: 1;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 700;
+      font-family: var(--mono);
+      background: var(--surface3);
+      color: var(--text);
+      padding: 0;
+      height: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 0;
+    }
+
+    .wt-val.changed {
+      color: #fbbf24;
+      background: var(--amber-bg);
+    }
+
+    /* toggle enable/disable */
+    .item-toggle-btn {
+      width: 100%;
+      border-radius: 5px;
+      border: none;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 4px 3px;
+      cursor: pointer;
+      transition: all .15s;
+    }
+
+    .item-toggle-btn.on {
+      background: var(--green-bg);
+      border: 1px solid var(--green-border);
+      color: #4ade80;
+    }
+
+    .item-toggle-btn.on:hover {
+      background: var(--green);
+      color: #fff;
+    }
+
+    .item-toggle-btn.off {
+      background: var(--red-bg);
+      border: 1px solid var(--red-border);
+      color: #f87171;
+    }
+
+    .item-toggle-btn.off:hover {
+      background: var(--red);
+      color: #fff;
+    }
+
+    /* reset dot */
+    .item-reset {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      background: none;
+      border: none;
+      color: var(--border2);
+      font-size: 13px;
+      cursor: pointer;
+      padding: 0;
+      line-height: 1;
+      transition: color .1s;
+      display: none;
+    }
+
+    .item-reset:hover {
+      color: var(--text);
+    }
+
+    .item-card.modified .item-reset,
+    .item-card.disabled .item-reset {
+      display: block;
+    }
+
+    /* prob bar on card */
+    .item-prob-bar {
+      width: 100%;
+      height: 3px;
+      background: var(--surface3);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-bottom: 4px;
+    }
+
+    .item-prob-fill {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 2px;
+      transition: width .3s;
+    }
+
+    .item-prob-text {
+      font-size: 9px;
+      color: var(--dim);
+      font-family: var(--mono);
+      text-align: center;
+    }
+
+    /* -- VALIDATION PANEL -- */
+    #validation {
+      flex-shrink: 0;
+      border-top: 1px solid var(--border);
+    }
+
+    #validation:empty {
+      display: none;
+    }
+
+    .val-msgs {
+      padding: 8px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .val-msg {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 7px 11px;
+      border-radius: 6px;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .val-msg .vicon {
+      font-size: 13px;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .val-err {
+      background: var(--red-bg);
+      border: 1px solid var(--red-border);
+      color: #fca5a5;
+    }
+
+    .val-warn {
+      background: var(--amber-bg);
+      border: 1px solid var(--amber-border);
+      color: #fcd34d;
+    }
+
+    .val-ok {
+      background: var(--green-bg);
+      border: 1px solid var(--green-border);
+      color: #86efac;
+    }
+
+    .val-info {
+      background: var(--blue-bg);
+      border: 1px solid var(--blue-border);
+      color: #93c5fd;
+    }
+
+    /* -- PREVIEW PANEL -- */
+    #preview-section {
+      flex-shrink: 0;
+      background: var(--surface2);
+      border-top: 1px solid var(--border);
+    }
+
+    #preview-toggle {
+      width: 100%;
+      background: none;
+      border: none;
+      color: var(--muted);
+      padding: 8px 16px;
+      font-size: 12px;
+      text-align: left;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: color .1s;
+    }
+
+    #preview-toggle:hover {
+      color: var(--text);
+    }
+
+    .ptoggle-arrow {
+      display: inline-block;
+      transition: transform .2s;
+      font-size: 10px;
+    }
+
+    #preview-toggle.open .ptoggle-arrow {
+      transform: rotate(90deg);
+    }
+
+    #preview-body {
+      display: none;
+    }
+
+    #preview-body.open {
+      display: block;
+    }
+
+    .preview-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .preview-tab {
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--dim);
+      padding: 7px 14px;
+      font-size: 11px;
+      font-family: var(--mono);
+      cursor: pointer;
+      margin-bottom: -1px;
+      transition: all .12s;
+    }
+
+    .preview-tab:hover {
+      color: var(--muted);
+    }
+
+    .preview-tab.active {
+      color: #4ade80;
+      border-bottom-color: #4ade80;
+    }
+
+    #preview-code {
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.6;
+      padding: 12px 16px;
+      max-height: 200px;
+      overflow: auto;
+      white-space: pre-wrap;
+      color: #a5f3fc;
+      background: var(--surface3);
+    }
+
+    /* -- EMPTY STATE -- */
+    .empty-state {
+      padding: 48px;
+      text-align: center;
+      color: var(--dim);
+      font-size: 13px;
+    }
+
+    /* scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 3px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--accent);
+    }
+
+    /* stats bar search */
+    #stats-bar #search-input {
+      background: var(--surface3);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      padding: 5px 10px;
+      font-size: 12px;
+      outline: none;
+      width: 200px;
+    }
+
+    #stats-bar #search-input:focus {
+      border-color: var(--accent);
+    }
+
+    /* shortcut buttons next to search */
+    #search-shortcuts {
+      display: flex;
+      gap: 5px;
+    }
+
+    #search-shortcuts button {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--muted);
+      padding: 4px 10px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: border-color .1s, color .1s, background .1s;
+    }
+
+    #enable-all-btn:hover {
+      border-color: var(--green-border);
+      color: #4ade80;
+      background: var(--green-bg);
+    }
+
+    #disable-all-btn:hover {
+      border-color: var(--red-border);
+      color: #f87171;
+      background: var(--red-bg);
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- HEADER -->
+  <div id="header">
+    <h1>Fetchr <span>Item Pool</span> Editor</h1>
+    <div class="spacer"></div>
+    <label for="ns-input">Namespace</label>
+    <input type="text" id="ns-input" value="my_fetchr_mod" maxlength="40" style="width:140px"
+      title="Your datapack namespace (lowercase, underscores)" />
+    <label for="fetchr-version-select">Fetchr</label>
+    <select id="fetchr-version-select">
+      <option value="5.3" selected>5.3.x</option>
+      <option value="5.2">5.2.x</option>
+    </select>
+    <label for="version-select">Target MC</label>
+    <select id="version-select"></select>
+    <button id="download-btn">&#x2B07;&#xFE0E; Download Datapack</button>
+  </div>
+
+  <!-- STATS BAR -->
+  <div id="stats-bar">
+    <div class="stat"><span class="stat-val sv-green" id="stat-active">148</span><span class="stat-label">active</span>
+    </div>
+    <div class="stat-sep"></div>
+    <div class="stat"><span class="stat-val sv-red" id="stat-disabled">0</span><span class="stat-label">removed</span>
+    </div>
+    <div class="stat-sep"></div>
+    <div class="stat"><span class="stat-val sv-amber" id="stat-modified">0</span><span
+        class="stat-label">modified</span></div>
+    <div class="stat-sep"></div>
+    <div id="sim-badge" class="ok">&#x2713; Cards OK</div>
+    <div class="spacer"></div>
+    <div id="search-shortcuts">
+      <button id="enable-all-btn" title="Enable all items">Enable All</button>
+      <button id="disable-all-btn" title="Disable all items">Disable All</button>
+    </div>
+    <input type="search" id="search-input" placeholder="&#x1F50D; Search items..." />
+  </div>
+
+  <!-- BODY -->
+  <div id="body-wrap">
+
+    <!-- MAIN -->
+    <div id="content">
+      <div id="content-scroll">
+        <div id="groups-wrap"></div>
+      </div>
+      <div id="validation"></div>
+      <div id="preview-section">
+        <button id="preview-toggle">
+          <span class="ptoggle-arrow">&#x25B6;&#xFE0E;</span> Preview generated files
+        </button>
+        <div id="preview-body">
+          <div class="preview-tabs">
+            <button class="preview-tab active" data-file="modify">modify_items.mcfunction</button>
+            <button class="preview-tab" data-file="tag">post_registration.json</button>
+            <button class="preview-tab" data-file="meta">pack.mcmeta</button>
+          </div>
+          <pre id="preview-code"></pre>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /body-wrap -->
+
+  <script>
+    // ================================================================
+    //  DATA
+    // ================================================================
+
+    // Icon CDN — try item texture first, fall back to block texture
+    const _ASSET = 'https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21.4/assets/minecraft/textures/';
+    // Cache: mcName -> resolved src string, or null for show-fallback
+    const _iconSrcCache = {};
+    // Block items where texture name differs from the block ID
+    const _BTEX = {
+      stonecutter: 'stonecutter_side', hay_block: 'hay_block_side',
+      dried_kelp_block: 'dried_kelp_top', bone_block: 'bone_block_top',
+      magma_block: 'magma', deepslate: 'deepslate_top',
+      dispenser: 'dispenser_front_horizontal', blast_furnace: 'blast_furnace_front',
+      piston: 'piston_top_normal', sticky_piston: 'piston_top_sticky',
+      jukebox: 'jukebox_side', target: 'target_top',
+      fletching_table: 'fletching_table_front', scaffolding: 'scaffolding_top',
+      lectern: 'lectern_front', tnt: 'tnt_side', melon: 'melon_side',
+      cauldron: 'cauldron_side', big_dripleaf: 'big_dripleaf_stem',
+      deepslate_tile_wall: 'deepslate_tiles',
+      muddy_mangrove_roots: 'muddy_mangrove_roots_side',
+      // blocks with no item texture:
+      copper_lantern: 'copper_lantern', lodestone: 'lodestone_side',
+      short_dry_grass: 'short_dry_grass', bush: 'bush',
+      firefly_bush: 'firefly_bush', cactus_flower: 'cactus_flower',
+    };
+    // Item textures whose file name differs from the item ID:
+    const _ITEX = {
+      crossbow: 'crossbow_standby',
+      tipped_arrow: 'tipped_arrow_base',
+      compass: 'compass',
+    };
+
+    const VANILLA_CATS = [
+      "fetchr:amethyst", "fetchr:armadillo", "fetchr:basic_iron", "fetchr:book", "fetchr:bow",
+      "fetchr:cherry_grove", "fetchr:clay", "fetchr:copper", "fetchr:chest_iron", "fetchr:compass",
+      "fetchr:deepslate", "fetchr:diamond", "fetchr:dripstone_cave", "fetchr:egg", "fetchr:fish",
+      "fetchr:flint", "fetchr:furnace", "fetchr:glow_ink", "fetchr:gold_and_ruined_portal",
+      "fetchr:gunpowder", "fetchr:ink", "fetchr:jungle", "fetchr:kelp", "fetchr:lapis",
+      "fetchr:leather", "fetchr:lodestone", "fetchr:lush_cave", "fetchr:mangrove", "fetchr:milk",
+      "fetchr:mushroom", "fetchr:nighttime_mob_drops", "fetchr:oak", "fetchr:pale_garden",
+      "fetchr:piston", "fetchr:pumpkin", "fetchr:rabbit", "fetchr:rail", "fetchr:redstone",
+      "fetchr:roots", "fetchr:sand", "fetchr:shearable", "fetchr:shipwreck", "fetchr:skeleton_drops",
+      "fetchr:spider", "fetchr:swamp", "fetchr:taiga", "fetchr:warm_biome", "fetchr:wheat", "fetchr:wool"
+    ];
+
+    // 5.2.x item pool (max supported: 1.21.4, pack format 61)
+    const BASE_ITEMS_52 = [
+      { id: "fetchr:pumpkin_seeds", mc: "minecraft:pumpkin_seeds", name: "Pumpkin Seeds", cats: ["fetchr:pumpkin"], w: 1 },
+      { id: "fetchr:pumpkin_pie", mc: "minecraft:pumpkin_pie", name: "Pumpkin Pie", cats: ["fetchr:pumpkin", "fetchr:egg"], w: 1 },
+      { id: "fetchr:egg", mc: "minecraft:egg", name: "Egg", cats: ["fetchr:egg"], w: 1 },
+      { id: "fetchr:cake", mc: "minecraft:cake", name: "Cake", cats: ["fetchr:egg", "fetchr:milk"], w: 1 },
+      { id: "fetchr:acacia_sapling", mc: "minecraft:acacia_sapling", name: "Acacia Sapling", cats: ["fetchr:warm_biome"], w: 2 },
+      { id: "fetchr:spruce_sapling", mc: "minecraft:spruce_sapling", name: "Spruce Sapling", cats: ["fetchr:taiga"], w: 1 },
+      { id: "fetchr:cocoa_beans", mc: "minecraft:cocoa_beans", name: "Cocoa Beans", cats: ["fetchr:jungle"], w: 3 },
+      { id: "fetchr:cookie", mc: "minecraft:cookie", name: "Cookie", cats: ["fetchr:jungle"], w: 3 },
+      { id: "fetchr:melon_slice", mc: "minecraft:melon_slice", name: "Melon Slice", cats: ["fetchr:jungle"], w: 2 },
+      { id: "fetchr:glistering_melon_slice", mc: "minecraft:glistering_melon_slice", name: "Glistering Melon Slice", cats: ["fetchr:jungle"], w: 2 },
+      { id: "fetchr:dead_bush", mc: "minecraft:dead_bush", name: "Dead Bush", cats: ["fetchr:shearable"], w: 2 },
+      { id: "fetchr:fern", mc: "minecraft:fern", name: "Fern", cats: ["fetchr:shearable", "fetchr:taiga"], w: 1 },
+      { id: "fetchr:vine", mc: "minecraft:vine", name: "Vine", cats: ["fetchr:shearable"], w: 1 },
+      { id: "fetchr:rail", mc: "minecraft:rail", name: "Rail", cats: ["fetchr:rail"], w: 1 },
+      { id: "fetchr:powered_rail", mc: "minecraft:powered_rail", name: "Powered Rail", cats: ["fetchr:gold_and_ruined_portal"], w: 3 },
+      { id: "fetchr:flint", mc: "minecraft:flint", name: "Flint", cats: ["fetchr:flint"], w: 1 },
+      { id: "fetchr:flint_and_steel", mc: "minecraft:flint_and_steel", name: "Flint and Steel", cats: ["fetchr:flint"], w: 1 },
+      { id: "fetchr:arrow", mc: "minecraft:arrow", name: "Arrow", cats: ["fetchr:skeleton_drops"], w: 2 },
+      { id: "fetchr:ender_pearl", mc: "minecraft:ender_pearl", name: "Ender Pearl", cats: ["fetchr:nighttime_mob_drops"], w: 6 },
+      { id: "fetchr:slime_ball", mc: "minecraft:slime_ball", name: "Slime Ball", cats: ["fetchr:nighttime_mob_drops"], w: 2 },
+      { id: "fetchr:firework_rocket", mc: "minecraft:firework_rocket", name: "Firework Rocket", cats: ["fetchr:gunpowder"], w: 2 },
+      { id: "fetchr:milk_bucket", mc: "minecraft:milk_bucket", name: "Milk Bucket", cats: ["fetchr:milk"], w: 1 },
+      { id: "fetchr:cauldron", mc: "minecraft:cauldron", name: "Cauldron", cats: ["fetchr:basic_iron"], w: 1 },
+      { id: "fetchr:carrot", mc: "minecraft:carrot", name: "Carrot", cats: ["fetchr:roots"], w: 1 },
+      { id: "fetchr:golden_carrot", mc: "minecraft:golden_carrot", name: "Golden Carrot", cats: ["fetchr:roots"], w: 1 },
+      { id: "fetchr:painting", mc: "minecraft:painting", name: "Painting", cats: ["fetchr:wool"], w: 1 },
+      { id: "fetchr:item_frame", mc: "minecraft:item_frame", name: "Item Frame", cats: ["fetchr:leather"], w: 1 },
+      { id: "fetchr:emerald", mc: "minecraft:emerald", name: "Emerald", cats: ["fetchr:shipwreck"], w: 1 },
+      { id: "fetchr:diamond_hoe", mc: "minecraft:diamond_hoe", name: "Diamond Hoe", cats: ["fetchr:diamond"], w: 1 },
+      { id: "fetchr:axolotl_bucket", mc: "minecraft:axolotl_bucket", name: "Axolotl Bucket", cats: ["fetchr:lush_cave"], w: 3 },
+      { id: "fetchr:flower_pot", mc: "minecraft:flower_pot", name: "Flower Pot", cats: ["fetchr:clay"], w: 1 },
+      { id: "fetchr:brick", mc: "minecraft:brick", name: "Brick", cats: ["fetchr:clay"], w: 1 },
+      { id: "fetchr:mushroom_stew", mc: "minecraft:mushroom_stew", name: "Mushroom Stew", cats: ["fetchr:mushroom"], w: 1 },
+      { id: "fetchr:mangrove_propagule", mc: "minecraft:mangrove_propagule", name: "Mangrove Propagule", cats: ["fetchr:mangrove"], w: 1 },
+      { id: "fetchr:apple", mc: "minecraft:apple", name: "Apple", cats: ["fetchr:oak"], w: 1 },
+      { id: "fetchr:golden_apple", mc: "minecraft:golden_apple", name: "Golden Apple", cats: ["fetchr:oak"], w: 1 },
+      { id: "fetchr:golden_shovel", mc: "minecraft:golden_shovel", name: "Golden Shovel", cats: ["fetchr:gold_and_ruined_portal"], w: 2 },
+      { id: "fetchr:golden_sword", mc: "minecraft:golden_sword", name: "Golden Sword", cats: ["fetchr:gold_and_ruined_portal"], w: 2 },
+      { id: "fetchr:clock", mc: "minecraft:clock", name: "Clock", cats: ["fetchr:gold_and_ruined_portal"], w: 3 },
+      { id: "fetchr:repeater", mc: "minecraft:repeater", name: "Repeater", cats: ["fetchr:redstone"], w: 1 },
+      { id: "fetchr:compass", mc: "minecraft:compass", name: "Compass", cats: ["fetchr:compass"], w: 1 },
+      { id: "fetchr:map", mc: "minecraft:map", name: "Map", cats: ["fetchr:compass"], w: 1 },
+      { id: "fetchr:book", mc: "minecraft:book", name: "Book", cats: ["fetchr:book"], w: 1 },
+      { id: "fetchr:writable_book", mc: "minecraft:writable_book", name: "Book and Quill", cats: ["fetchr:book"], w: 1 },
+      { id: "fetchr:enchanted_book", mc: "minecraft:enchanted_book", name: "Enchanted Book", cats: ["fetchr:diamond"], w: 1 },
+      { id: "fetchr:spider_eye", mc: "minecraft:spider_eye", name: "Spider Eye", cats: ["fetchr:spider"], w: 1 },
+      { id: "fetchr:fermented_spider_eye", mc: "minecraft:fermented_spider_eye", name: "Fermented Spider Eye", cats: ["fetchr:spider"], w: 1 },
+      { id: "fetchr:gunpowder", mc: "minecraft:gunpowder", name: "Gunpowder", cats: ["fetchr:gunpowder"], w: 2 },
+      { id: "fetchr:tnt_minecart", mc: "minecraft:tnt_minecart", name: "TNT Minecart", cats: ["fetchr:gunpowder"], w: 1 },
+      { id: "fetchr:hopper", mc: "minecraft:hopper", name: "Hopper", cats: ["fetchr:chest_iron"], w: 1 },
+      { id: "fetchr:hopper_minecart", mc: "minecraft:hopper_minecart", name: "Hopper Minecart", cats: ["fetchr:chest_iron"], w: 1 },
+      { id: "fetchr:furnace_minecart", mc: "minecraft:furnace_minecart", name: "Furnace Minecart", cats: ["fetchr:furnace"], w: 1 },
+      { id: "fetchr:chest_minecart", mc: "minecraft:chest_minecart", name: "Chest Minecart", cats: ["fetchr:chest_iron"], w: 1 },
+      { id: "fetchr:bone", mc: "minecraft:bone", name: "Bone", cats: ["fetchr:skeleton_drops"], w: 2 },
+      { id: "fetchr:ink_sac", mc: "minecraft:ink_sac", name: "Ink Sac", cats: ["fetchr:ink"], w: 1 },
+      { id: "fetchr:gray_dye", mc: "minecraft:gray_dye", name: "Gray Dye", cats: ["fetchr:ink"], w: 1 },
+      { id: "fetchr:green_dye", mc: "minecraft:green_dye", name: "Green Dye", cats: ["fetchr:warm_biome"], w: 2 },
+      { id: "fetchr:lime_dye", mc: "minecraft:lime_dye", name: "Lime Dye", cats: ["fetchr:warm_biome"], w: 1 },
+      { id: "fetchr:lapis_lazuli", mc: "minecraft:lapis_lazuli", name: "Lapis Lazuli", cats: ["fetchr:lapis"], w: 1 },
+      { id: "fetchr:cyan_dye", mc: "minecraft:cyan_dye", name: "Cyan Dye", cats: ["fetchr:lapis"], w: 2 },
+      { id: "fetchr:purple_dye", mc: "minecraft:purple_dye", name: "Purple Dye", cats: ["fetchr:lapis"], w: 2 },
+      { id: "fetchr:suspicious_stew", mc: "minecraft:suspicious_stew", name: "Suspicious Stew", cats: ["fetchr:mushroom"], w: 1 },
+      { id: "fetchr:glass_bottle", mc: "minecraft:glass_bottle", name: "Glass Bottle", cats: ["fetchr:sand"], w: 1 },
+      { id: "fetchr:cod", mc: "minecraft:cod", name: "Cod", cats: ["fetchr:fish"], w: 1 },
+      { id: "fetchr:cod_bucket", mc: "minecraft:cod_bucket", name: "Cod Bucket", cats: ["fetchr:fish"], w: 1 },
+      { id: "fetchr:salmon", mc: "minecraft:salmon", name: "Salmon", cats: ["fetchr:fish"], w: 1 },
+      { id: "fetchr:salmon_bucket", mc: "minecraft:salmon_bucket", name: "Salmon Bucket", cats: ["fetchr:fish"], w: 1 },
+      { id: "fetchr:tropical_fish", mc: "minecraft:tropical_fish", name: "Tropical Fish", cats: ["fetchr:fish"], w: 1 },
+      { id: "fetchr:tropical_fish_bucket", mc: "minecraft:tropical_fish_bucket", name: "Tropical Fish Bucket", cats: ["fetchr:fish"], w: 1 },
+      { id: "fetchr:dark_oak_sapling", mc: "minecraft:dark_oak_sapling", name: "Dark Oak Sapling", cats: ["fetchr:oak"], w: 1 },
+      { id: "fetchr:lead", mc: "minecraft:lead", name: "Lead", cats: ["fetchr:nighttime_mob_drops"], w: 2 },
+      { id: "fetchr:detector_rail", mc: "minecraft:detector_rail", name: "Detector Rail", cats: ["fetchr:rail"], w: 1 },
+      { id: "fetchr:activator_rail", mc: "minecraft:activator_rail", name: "Activator Rail", cats: ["fetchr:rail"], w: 1 },
+      { id: "fetchr:heart_of_the_sea", mc: "minecraft:heart_of_the_sea", name: "Heart of the Sea", cats: ["fetchr:shipwreck"], w: 1 },
+      { id: "fetchr:glow_berries", mc: "minecraft:glow_berries", name: "Glow Berries", cats: ["fetchr:lush_cave"], w: 3 },
+      { id: "fetchr:sweet_berries", mc: "minecraft:sweet_berries", name: "Sweet Berries", cats: ["fetchr:taiga"], w: 1 },
+      { id: "fetchr:diamond_pickaxe", mc: "minecraft:diamond_pickaxe", name: "Diamond Pickaxe", cats: ["fetchr:diamond"], w: 1 },
+      { id: "fetchr:golden_axe", mc: "minecraft:golden_axe", name: "Golden Axe", cats: ["fetchr:gold_and_ruined_portal"], w: 2 },
+      { id: "fetchr:blue_trimmed_leather_boots", mc: "minecraft:leather_boots", name: "Blue Trimmed Leather Boots", cats: ["fetchr:shipwreck"], w: 1 },
+      { id: "fetchr:crossbow", mc: "minecraft:crossbow", name: "Crossbow", cats: ["fetchr:bow"], w: 1 },
+      { id: "fetchr:bamboo", mc: "minecraft:bamboo", name: "Bamboo", cats: ["fetchr:jungle"], w: 3 },
+      { id: "fetchr:sea_pickle", mc: "minecraft:sea_pickle", name: "Sea Pickle", cats: ["fetchr:warm_biome"], w: 1 },
+      { id: "fetchr:seagrass", mc: "minecraft:seagrass", name: "Seagrass", cats: ["fetchr:shearable"], w: 2 },
+      { id: "fetchr:rabbit_hide", mc: "minecraft:rabbit_hide", name: "Rabbit Hide", cats: ["fetchr:rabbit"], w: 1 },
+      { id: "fetchr:cooked_rabbit", mc: "minecraft:cooked_rabbit", name: "Cooked Rabbit", cats: ["fetchr:rabbit"], w: 1 },
+      { id: "fetchr:dried_kelp", mc: "minecraft:dried_kelp", name: "Dried Kelp", cats: ["fetchr:kelp"], w: 1 },
+      { id: "fetchr:slowness_arrow", mc: "minecraft:tipped_arrow", name: "Slowness Arrow", cats: ["fetchr:skeleton_drops", "fetchr:nighttime_mob_drops"], w: 1 },
+      { id: "fetchr:glow_ink_sac", mc: "minecraft:glow_ink_sac", name: "Glow Ink Sac", cats: ["fetchr:glow_ink"], w: 1 },
+      { id: "fetchr:glow_item_frame", mc: "minecraft:glow_item_frame", name: "Glow Item Frame", cats: ["fetchr:glow_ink", "fetchr:leather"], w: 1 },
+      { id: "fetchr:pointed_dripstone", mc: "minecraft:pointed_dripstone", name: "Pointed Dripstone", cats: ["fetchr:dripstone_cave"], w: 1 },
+      { id: "fetchr:hanging_roots", mc: "minecraft:hanging_roots", name: "Hanging Roots", cats: ["fetchr:lush_cave"], w: 1 },
+      { id: "fetchr:glow_lichen", mc: "minecraft:glow_lichen", name: "Glow Lichen", cats: ["fetchr:shearable"], w: 2 },
+      { id: "fetchr:amethyst_shard", mc: "minecraft:amethyst_shard", name: "Amethyst Shard", cats: ["fetchr:amethyst"], w: 1 },
+      { id: "fetchr:spyglass", mc: "minecraft:spyglass", name: "Spyglass", cats: ["fetchr:amethyst"], w: 1 },
+      { id: "fetchr:hanging_acacia_sign", mc: "minecraft:acacia_hanging_sign", name: "Hanging Acacia Sign", cats: ["fetchr:basic_iron"], w: 3 },
+      { id: "fetchr:brush", mc: "minecraft:brush", name: "Brush", cats: ["fetchr:copper"], w: 3 },
+      { id: "fetchr:cherry_chest_boat", mc: "minecraft:cherry_chest_boat", name: "Cherry Chest Boat", cats: ["fetchr:cherry_grove"], w: 1 },
+      { id: "fetchr:pink_petals", mc: "minecraft:pink_petals", name: "Pink Petals", cats: ["fetchr:cherry_grove"], w: 1 },
+      { id: "fetchr:cherry_sapling", mc: "minecraft:cherry_sapling", name: "Cherry Sapling", cats: ["fetchr:cherry_grove"], w: 1 },
+      { id: "fetchr:carrot_on_a_stick", mc: "minecraft:carrot_on_a_stick", name: "Carrot on a Stick", cats: ["fetchr:roots"], w: 1 },
+      { id: "fetchr:baked_potato", mc: "minecraft:baked_potato", name: "Baked Potato", cats: ["fetchr:roots"], w: 3 },
+      { id: "fetchr:jungle_sapling", mc: "minecraft:jungle_sapling", name: "Jungle Sapling", cats: ["fetchr:jungle"], w: 6 },
+      { id: "fetchr:light_blue_bundle", mc: "minecraft:light_blue_bundle", name: "Light Blue Bundle", cats: ["fetchr:leather"], w: 2 },
+      { id: "fetchr:armadillo_scute", mc: "minecraft:armadillo_scute", name: "Armadillo Scute", cats: ["fetchr:armadillo"], w: 1 },
+      { id: "fetchr:wolf_armor", mc: "minecraft:wolf_armor", name: "Wolf Armor", cats: ["fetchr:armadillo"], w: 1 },
+      { id: "fetchr:poison_arrow", mc: "minecraft:tipped_arrow", name: "Poison Arrow", cats: ["fetchr:skeleton_drops", "fetchr:nighttime_mob_drops"], w: 1 },
+      { id: "fetchr:closed_eyeblossom", mc: "minecraft:closed_eyeblossom", name: "Closed Eyeblossom", cats: ["fetchr:pale_garden"], w: 3 },
+      { id: "fetchr:open_eyeblossom", mc: "minecraft:open_eyeblossom", name: "Open Eyeblossom", cats: ["fetchr:pale_garden"], w: 3 },
+      { id: "fetchr:resin_clump", mc: "minecraft:resin_clump", name: "Resin Clump", cats: ["fetchr:pale_garden", "fetchr:nighttime_mob_drops"], w: 2 },
+      { id: "fetchr:pale_hanging_moss", mc: "minecraft:pale_hanging_moss", name: "Pale Hanging Moss", cats: ["fetchr:pale_garden", "fetchr:shearable"], w: 1 },
+      { id: "fetchr:iron_block", mc: "minecraft:iron_block", name: "Iron Block", cats: ["fetchr:basic_iron"], w: 1 },
+      { id: "fetchr:redstone_block", mc: "minecraft:redstone_block", name: "Redstone Block", cats: ["fetchr:redstone"], w: 1 },
+      { id: "fetchr:bookshelf", mc: "minecraft:bookshelf", name: "Bookshelf", cats: ["fetchr:book"], w: 1 },
+      { id: "fetchr:obsidian", mc: "minecraft:obsidian", name: "Obsidian", cats: ["fetchr:diamond"], w: 1 },
+      { id: "fetchr:melon", mc: "minecraft:melon", name: "Melon", cats: ["fetchr:jungle"], w: 2 },
+      { id: "fetchr:mossy_stone_bricks", mc: "minecraft:mossy_stone_bricks", name: "Mossy Stone Bricks", cats: ["fetchr:shearable"], w: 1 },
+      { id: "fetchr:jukebox", mc: "minecraft:jukebox", name: "Jukebox", cats: ["fetchr:diamond"], w: 2 },
+      { id: "fetchr:magma_block", mc: "minecraft:magma_block", name: "Magma Block", cats: ["fetchr:gold_and_ruined_portal"], w: 6 },
+      { id: "fetchr:bone_block", mc: "minecraft:bone_block", name: "Bone Block", cats: ["fetchr:skeleton_drops"], w: 2 },
+      { id: "fetchr:blast_furnace", mc: "minecraft:blast_furnace", name: "Blast Furnace", cats: ["fetchr:furnace"], w: 1 },
+      { id: "fetchr:raw_iron_block", mc: "minecraft:raw_iron_block", name: "Raw Iron Block", cats: ["fetchr:basic_iron"], w: 1 },
+      { id: "fetchr:red_bed", mc: "minecraft:red_bed", name: "Red Bed", cats: ["fetchr:wool"], w: 1 },
+      { id: "fetchr:target", mc: "minecraft:target", name: "Target", cats: ["fetchr:wheat"], w: 1 },
+      { id: "fetchr:snow", mc: "minecraft:snow", name: "Snow Layer", cats: ["fetchr:taiga"], w: 1 },
+      { id: "fetchr:stonecutter", mc: "minecraft:stonecutter", name: "Stonecutter", cats: ["fetchr:basic_iron"], w: 3 },
+      { id: "fetchr:jack_o_lantern", mc: "minecraft:jack_o_lantern", name: "Jack o'Lantern", cats: ["fetchr:pumpkin"], w: 1 },
+      { id: "fetchr:tnt", mc: "minecraft:tnt", name: "TNT", cats: ["fetchr:gunpowder"], w: 1 },
+      { id: "fetchr:lapis_block", mc: "minecraft:lapis_block", name: "Lapis Lazuli Block", cats: ["fetchr:lapis"], w: 1 },
+      { id: "fetchr:dispenser", mc: "minecraft:dispenser", name: "Dispenser", cats: ["fetchr:bow"], w: 1 },
+      { id: "fetchr:smoker", mc: "minecraft:smoker", name: "Smoker", cats: ["fetchr:furnace"], w: 1 },
+      { id: "fetchr:dried_kelp_block", mc: "minecraft:dried_kelp_block", name: "Dried Kelp Block", cats: ["fetchr:kelp"], w: 1 },
+      { id: "fetchr:hay_bale", mc: "minecraft:hay_block", name: "Hay Bale", cats: ["fetchr:wheat"], w: 1 },
+      { id: "fetchr:fletching_table", mc: "minecraft:fletching_table", name: "Fletching Table", cats: ["fetchr:flint"], w: 1 },
+      { id: "fetchr:lectern", mc: "minecraft:lectern", name: "Lectern", cats: ["fetchr:book"], w: 1 },
+      { id: "fetchr:raw_gold_block", mc: "minecraft:raw_gold_block", name: "Raw Gold Block", cats: ["fetchr:gold_and_ruined_portal"], w: 3 },
+      { id: "fetchr:gold_block", mc: "minecraft:gold_block", name: "Gold Block", cats: ["fetchr:gold_and_ruined_portal"], w: 3 },
+      { id: "fetchr:scaffolding", mc: "minecraft:scaffolding", name: "Scaffolding", cats: ["fetchr:jungle"], w: 3 },
+      { id: "fetchr:piston", mc: "minecraft:piston", name: "Piston", cats: ["fetchr:piston"], w: 1 },
+      { id: "fetchr:sticky_piston", mc: "minecraft:sticky_piston", name: "Sticky Piston", cats: ["fetchr:piston", "fetchr:nighttime_mob_drops"], w: 1 },
+      { id: "fetchr:orange_concrete", mc: "minecraft:orange_concrete", name: "Orange Concrete", cats: ["fetchr:sand"], w: 2 },
+      { id: "fetchr:pink_glazed_terracotta", mc: "minecraft:pink_glazed_terracotta", name: "Pink Glazed Terracotta", cats: ["fetchr:clay"], w: 2 },
+      { id: "fetchr:deepslate", mc: "minecraft:deepslate", name: "Deepslate", cats: ["fetchr:deepslate"], w: 1 },
+      { id: "fetchr:cracked_deepslate_bricks", mc: "minecraft:cracked_deepslate_bricks", name: "Cracked Deepslate Bricks", cats: ["fetchr:deepslate"], w: 1 },
+      { id: "fetchr:deepslate_tile_wall", mc: "minecraft:deepslate_tile_wall", name: "Deepslate Tile Wall", cats: ["fetchr:deepslate"], w: 1 },
+      { id: "fetchr:muddy_mangrove_roots", mc: "minecraft:muddy_mangrove_roots", name: "Muddy Mangrove Roots", cats: ["fetchr:mangrove"], w: 1 },
+      { id: "fetchr:packed_mud", mc: "minecraft:packed_mud", name: "Packed Mud", cats: ["fetchr:mangrove"], w: 1 },
+      { id: "fetchr:mud_bricks", mc: "minecraft:mud_bricks", name: "Mud Bricks", cats: ["fetchr:mangrove"], w: 1 },
+      { id: "fetchr:rooted_dirt", mc: "minecraft:rooted_dirt", name: "Rooted Dirt", cats: ["fetchr:lush_cave"], w: 1 },
+      { id: "fetchr:moss_carpet", mc: "minecraft:moss_carpet", name: "Moss Carpet", cats: ["fetchr:lush_cave"], w: 3 },
+      { id: "fetchr:flowering_azalea", mc: "minecraft:flowering_azalea", name: "Flowering Azalea", cats: ["fetchr:lush_cave"], w: 1 },
+      { id: "fetchr:spore_blossom", mc: "minecraft:spore_blossom", name: "Spore Blossom", cats: ["fetchr:lush_cave"], w: 3 },
+      { id: "fetchr:dripstone_block", mc: "minecraft:dripstone_block", name: "Dripstone Block", cats: ["fetchr:dripstone_cave"], w: 1 },
+      { id: "fetchr:raw_copper_block", mc: "minecraft:raw_copper_block", name: "Raw Copper Block", cats: ["fetchr:copper"], w: 1 },
+      { id: "fetchr:copper_block", mc: "minecraft:copper_block", name: "Copper Block", cats: ["fetchr:copper"], w: 1 },
+      { id: "fetchr:exposed_cut_copper", mc: "minecraft:exposed_cut_copper", name: "Exposed Cut Copper", cats: ["fetchr:copper"], w: 1 },
+      { id: "fetchr:big_dripleaf", mc: "minecraft:big_dripleaf", name: "Big Dripleaf", cats: ["fetchr:lush_cave"], w: 3 },
+      { id: "fetchr:tuff", mc: "minecraft:tuff", name: "Tuff", cats: ["fetchr:deepslate"], w: 3 },
+      { id: "fetchr:white_stained_glass", mc: "minecraft:white_stained_glass", name: "White Stained Glass", cats: ["fetchr:sand"], w: 1 },
+      { id: "fetchr:brown_banner", mc: "minecraft:brown_banner", name: "Brown Banner", cats: ["fetchr:wool"], w: 1 },
+      { id: "fetchr:amethyst_block", mc: "minecraft:amethyst_block", name: "Amethyst Block", cats: ["fetchr:amethyst"], w: 2 },
+      { id: "fetchr:calcite", mc: "minecraft:calcite", name: "Calcite", cats: ["fetchr:amethyst"], w: 2 },
+      { id: "fetchr:chiseled_resin_bricks", mc: "minecraft:chiseled_resin_bricks", name: "Chiseled Resin Bricks", cats: ["fetchr:pale_garden", "fetchr:nighttime_mob_drops"], w: 2 },
+      { id: "fetchr:creaking_heart", mc: "minecraft:creaking_heart", name: "Creaking Heart", cats: ["fetchr:pale_garden", "fetchr:nighttime_mob_drops"], w: 2 },
+      { id: "fetchr:pale_moss_block", mc: "minecraft:pale_moss_block", name: "Pale Moss Block", cats: ["fetchr:pale_garden"], w: 6 },
+    ];
+
+    // 5.3.x item pool (max supported: 1.21.9 / 1.21.10, pack format 88)
+    const BASE_ITEMS_53 = [
+      { id: "fetchr:pumpkin_seeds", mc: "minecraft:pumpkin_seeds", name: "Pumpkin Seeds", cats: ["fetchr:pumpkin"], w: 1 },
+      { id: "fetchr:pumpkin_pie", mc: "minecraft:pumpkin_pie", name: "Pumpkin Pie", cats: ["fetchr:pumpkin", "fetchr:egg"], w: 1 },
+      { id: "fetchr:egg", mc: "minecraft:egg", name: "Egg", cats: ["fetchr:egg"], w: 1 },
+      { id: "fetchr:cake", mc: "minecraft:cake", name: "Cake", cats: ["fetchr:milk", "fetchr:egg"], w: 1 },
+      { id: "fetchr:acacia_sapling", mc: "minecraft:acacia_sapling", name: "Acacia Sapling", cats: ["fetchr:warm_biome"], w: 6 },
+      { id: "fetchr:spruce_sapling", mc: "minecraft:spruce_sapling", name: "Spruce Sapling", cats: ["fetchr:taiga"], w: 1 },
+      { id: "fetchr:cocoa_beans", mc: "minecraft:cocoa_beans", name: "Cocoa Beans", cats: ["fetchr:jungle"], w: 3 },
+      { id: "fetchr:cookie", mc: "minecraft:cookie", name: "Cookie", cats: ["fetchr:jungle"], w: 3 },
+      { id: "fetchr:melon_slice", mc: "minecraft:melon_slice", name: "Melon Slice", cats: ["fetchr:jungle"], w: 2 },
+      { id: "fetchr:glistering_melon_slice", mc: "minecraft:glistering_melon_slice", name: "Glistering Melon Slice", cats: ["fetchr:jungle"], w: 2 },
+      { id: "fetchr:dead_bush", mc: "minecraft:dead_bush", name: "Dead Bush", cats: ["fetchr:shearable", "fetchr:warm_biome"], w: 1 },
+      { id: "fetchr:fern", mc: "minecraft:fern", name: "Fern", cats: ["fetchr:shearable", "fetchr:taiga"], w: 1 },
+      { id: "fetchr:vine", mc: "minecraft:vine", name: "Vine", cats: ["fetchr:shearable"], w: 1 },
+      { id: "fetchr:rail", mc: "minecraft:rail", name: "Rail", cats: ["fetchr:rail"], w: 1 },
+      { id: "fetchr:powered_rail", mc: "minecraft:powered_rail", name: "Powered Rail", cats: ["fetchr:gold_and_ruined_portal"], w: 3 },
+      { id: "fetchr:flint", mc: "minecraft:flint", name: "Flint", cats: ["fetchr:flint"], w: 1 },
+      { id: "fetchr:flint_and_steel", mc: "minecraft:flint_and_steel", name: "Flint and Steel", cats: ["fetchr:flint"], w: 1 },
+      { id: "fetchr:arrow", mc: "minecraft:arrow", name: "Arrow", cats: ["fetchr:skeleton_drops"], w: 2 },
+      { id: "fetchr:ender_pearl", mc: "minecraft:ender_pearl", name: "Ender Pearl", cats: ["fetchr:nighttime_mob_drops"], w: 6 },
+      { id: "fetchr:slime_ball", mc: "minecraft:slime_ball", name: "Slime Ball", cats: ["fetchr:swamp", "fetchr:nighttime_mob_drops"], w: 3 },
+      { id: "fetchr:firework_rocket", mc: "minecraft:firework_rocket", name: "Firework Rocket", cats: ["fetchr:gunpowder"], w: 2 },
+      { id: "fetchr:milk_bucket", mc: "minecraft:milk_bucket", name: "Milk Bucket", cats: ["fetchr:milk"], w: 1 },
+      { id: "fetchr:cauldron", mc: "minecraft:cauldron", name: "Cauldron", cats: ["fetchr:basic_iron"], w: 1 },
+      { id: "fetchr:carrot", mc: "minecraft:carrot", name: "Carrot", cats: ["fetchr:roots"], w: 1 },
+      { id: "fetchr:golden_carrot", mc: "minecraft:golden_carrot", name: "Golden Carrot", cats: ["fetchr:roots"], w: 1 },
+      { id: "fetchr:painting", mc: "minecraft:painting", name: "Painting", cats: ["fetchr:wool"], w: 1 },
+      { id: "fetchr:item_frame", mc: "minecraft:item_frame", name: "Item Frame", cats: ["fetchr:leather"], w: 1 },
+      { id: "fetchr:emerald", mc: "minecraft:emerald", name: "Emerald", cats: ["fetchr:shipwreck"], w: 1 },
+      { id: "fetchr:lodestone_compass", mc: "minecraft:compass", name: "Lodestone Compass", cats: ["fetchr:lodestone", "fetchr:compass"], w: 1 },
+      { id: "fetchr:diamond_hoe", mc: "minecraft:diamond_hoe", name: "Diamond Hoe", cats: ["fetchr:diamond"], w: 1 },
+      { id: "fetchr:cactus_flower", mc: "minecraft:cactus_flower", name: "Cactus Flower", cats: ["fetchr:warm_biome"], w: 6 },
+      { id: "fetchr:axolotl_bucket", mc: "minecraft:axolotl_bucket", name: "Axolotl Bucket", cats: ["fetchr:lush_cave"], w: 3 },
+      { id: "fetchr:flower_pot", mc: "minecraft:flower_pot", name: "Flower Pot", cats: ["fetchr:clay"], w: 1 },
+      { id: "fetchr:brick", mc: "minecraft:brick", name: "Brick", cats: ["fetchr:clay"], w: 1 },
+      { id: "fetchr:mushroom_stew", mc: "minecraft:mushroom_stew", name: "Mushroom Stew", cats: ["fetchr:mushroom"], w: 1 },
+      { id: "fetchr:mangrove_propagule", mc: "minecraft:mangrove_propagule", name: "Mangrove Propagule", cats: ["fetchr:mangrove"], w: 1 },
+      { id: "fetchr:apple", mc: "minecraft:apple", name: "Apple", cats: ["fetchr:oak"], w: 1 },
+      { id: "fetchr:golden_apple", mc: "minecraft:golden_apple", name: "Golden Apple", cats: ["fetchr:oak"], w: 1 },
+      { id: "fetchr:golden_shovel", mc: "minecraft:golden_shovel", name: "Golden Shovel", cats: ["fetchr:gold_and_ruined_portal"], w: 2 },
+      { id: "fetchr:golden_sword", mc: "minecraft:golden_sword", name: "Golden Sword", cats: ["fetchr:gold_and_ruined_portal"], w: 2 },
+      { id: "fetchr:clock", mc: "minecraft:clock", name: "Clock", cats: ["fetchr:gold_and_ruined_portal"], w: 3 },
+      { id: "fetchr:repeater", mc: "minecraft:repeater", name: "Repeater", cats: ["fetchr:redstone"], w: 1 },
+      { id: "fetchr:compass", mc: "minecraft:compass", name: "Compass", cats: ["fetchr:compass"], w: 1 },
+      { id: "fetchr:map", mc: "minecraft:map", name: "Map", cats: ["fetchr:compass"], w: 1 },
+      { id: "fetchr:book", mc: "minecraft:book", name: "Book", cats: ["fetchr:book"], w: 1 },
+      { id: "fetchr:writable_book", mc: "minecraft:writable_book", name: "Book and Quill", cats: ["fetchr:book"], w: 1 },
+      { id: "fetchr:enchanted_book", mc: "minecraft:enchanted_book", name: "Enchanted Book", cats: ["fetchr:diamond"], w: 1 },
+      { id: "fetchr:spider_eye", mc: "minecraft:spider_eye", name: "Spider Eye", cats: ["fetchr:spider"], w: 1 },
+      { id: "fetchr:fermented_spider_eye", mc: "minecraft:fermented_spider_eye", name: "Fermented Spider Eye", cats: ["fetchr:spider"], w: 1 },
+      { id: "fetchr:gunpowder", mc: "minecraft:gunpowder", name: "Gunpowder", cats: ["fetchr:gunpowder"], w: 2 },
+      { id: "fetchr:tnt_minecart", mc: "minecraft:tnt_minecart", name: "TNT Minecart", cats: ["fetchr:gunpowder"], w: 1 },
+      { id: "fetchr:hopper", mc: "minecraft:hopper", name: "Hopper", cats: ["fetchr:chest_iron"], w: 1 },
+      { id: "fetchr:hopper_minecart", mc: "minecraft:hopper_minecart", name: "Hopper Minecart", cats: ["fetchr:chest_iron"], w: 1 },
+      { id: "fetchr:furnace_minecart", mc: "minecraft:furnace_minecart", name: "Furnace Minecart", cats: ["fetchr:furnace"], w: 1 },
+      { id: "fetchr:chest_minecart", mc: "minecraft:chest_minecart", name: "Chest Minecart", cats: ["fetchr:chest_iron"], w: 1 },
+      { id: "fetchr:bone", mc: "minecraft:bone", name: "Bone", cats: ["fetchr:skeleton_drops"], w: 2 },
+      { id: "fetchr:ink_sac", mc: "minecraft:ink_sac", name: "Ink Sac", cats: ["fetchr:ink"], w: 1 },
+      { id: "fetchr:gray_dye", mc: "minecraft:gray_dye", name: "Gray Dye", cats: ["fetchr:ink"], w: 1 },
+      { id: "fetchr:green_dye", mc: "minecraft:green_dye", name: "Green Dye", cats: ["fetchr:warm_biome"], w: 2 },
+      { id: "fetchr:lime_dye", mc: "minecraft:lime_dye", name: "Lime Dye", cats: ["fetchr:warm_biome"], w: 2 },
+      { id: "fetchr:lapis_lazuli", mc: "minecraft:lapis_lazuli", name: "Lapis Lazuli", cats: ["fetchr:lapis"], w: 1 },
+      { id: "fetchr:cyan_dye", mc: "minecraft:cyan_dye", name: "Cyan Dye", cats: ["fetchr:lapis"], w: 2 },
+      { id: "fetchr:purple_dye", mc: "minecraft:purple_dye", name: "Purple Dye", cats: ["fetchr:lapis"], w: 2 },
+      { id: "fetchr:suspicious_stew", mc: "minecraft:suspicious_stew", name: "Suspicious Stew", cats: ["fetchr:mushroom"], w: 1 },
+      { id: "fetchr:glass_bottle", mc: "minecraft:glass_bottle", name: "Glass Bottle", cats: ["fetchr:sand"], w: 1 },
+      { id: "fetchr:cod", mc: "minecraft:cod", name: "Cod", cats: ["fetchr:fish"], w: 1 },
+      { id: "fetchr:cod_bucket", mc: "minecraft:cod_bucket", name: "Cod Bucket", cats: ["fetchr:fish"], w: 1 },
+      { id: "fetchr:salmon", mc: "minecraft:salmon", name: "Salmon", cats: ["fetchr:fish"], w: 1 },
+      { id: "fetchr:salmon_bucket", mc: "minecraft:salmon_bucket", name: "Salmon Bucket", cats: ["fetchr:fish"], w: 1 },
+      { id: "fetchr:tropical_fish", mc: "minecraft:tropical_fish", name: "Tropical Fish", cats: ["fetchr:fish"], w: 1 },
+      { id: "fetchr:tropical_fish_bucket", mc: "minecraft:tropical_fish_bucket", name: "Tropical Fish Bucket", cats: ["fetchr:fish"], w: 1 },
+      { id: "fetchr:firefly_bush", mc: "minecraft:firefly_bush", name: "Firefly Bush", cats: ["fetchr:swamp"], w: 2 },
+      { id: "fetchr:dark_oak_sapling", mc: "minecraft:dark_oak_sapling", name: "Dark Oak Sapling", cats: ["fetchr:oak"], w: 1 },
+      { id: "fetchr:lead", mc: "minecraft:lead", name: "Lead", cats: ["fetchr:spider"], w: 2 },
+      { id: "fetchr:detector_rail", mc: "minecraft:detector_rail", name: "Detector Rail", cats: ["fetchr:rail"], w: 1 },
+      { id: "fetchr:activator_rail", mc: "minecraft:activator_rail", name: "Activator Rail", cats: ["fetchr:rail"], w: 1 },
+      { id: "fetchr:heart_of_the_sea", mc: "minecraft:heart_of_the_sea", name: "Heart of the Sea", cats: ["fetchr:shipwreck"], w: 1 },
+      { id: "fetchr:glow_berries", mc: "minecraft:glow_berries", name: "Glow Berries", cats: ["fetchr:lush_cave"], w: 3 },
+      { id: "fetchr:sweet_berries", mc: "minecraft:sweet_berries", name: "Sweet Berries", cats: ["fetchr:taiga"], w: 1 },
+      { id: "fetchr:short_dry_grass", mc: "minecraft:short_dry_grass", name: "Short Dry Grass", cats: ["fetchr:shearable", "fetchr:warm_biome"], w: 1 },
+      { id: "fetchr:diamond_pickaxe", mc: "minecraft:diamond_pickaxe", name: "Diamond Pickaxe", cats: ["fetchr:diamond"], w: 1 },
+      { id: "fetchr:golden_axe", mc: "minecraft:golden_axe", name: "Golden Axe", cats: ["fetchr:gold_and_ruined_portal"], w: 2 },
+      { id: "fetchr:blue_trimmed_copper_boots", mc: "minecraft:copper_boots", name: "Blue Trimmed Copper Boots", cats: ["fetchr:shipwreck"], w: 1 },
+      { id: "fetchr:bush", mc: "minecraft:bush", name: "Bush", cats: ["fetchr:shearable"], w: 2 },
+      { id: "fetchr:crossbow", mc: "minecraft:crossbow", name: "Crossbow", cats: ["fetchr:bow"], w: 1 },
+      { id: "fetchr:bamboo", mc: "minecraft:bamboo", name: "Bamboo", cats: ["fetchr:jungle"], w: 3 },
+      { id: "fetchr:sea_pickle", mc: "minecraft:sea_pickle", name: "Sea Pickle", cats: ["fetchr:warm_biome"], w: 2 },
+      { id: "fetchr:seagrass", mc: "minecraft:seagrass", name: "Seagrass", cats: ["fetchr:shearable"], w: 2 },
+      { id: "fetchr:rabbit_hide", mc: "minecraft:rabbit_hide", name: "Rabbit Hide", cats: ["fetchr:rabbit"], w: 1 },
+      { id: "fetchr:cooked_rabbit", mc: "minecraft:cooked_rabbit", name: "Cooked Rabbit", cats: ["fetchr:rabbit"], w: 1 },
+      { id: "fetchr:dried_kelp", mc: "minecraft:dried_kelp", name: "Dried Kelp", cats: ["fetchr:kelp"], w: 1 },
+      { id: "fetchr:slowness_arrow", mc: "minecraft:tipped_arrow", name: "Slowness Arrow", cats: ["fetchr:skeleton_drops", "fetchr:nighttime_mob_drops"], w: 1 },
+      { id: "fetchr:glow_ink_sac", mc: "minecraft:glow_ink_sac", name: "Glow Ink Sac", cats: ["fetchr:glow_ink"], w: 1 },
+      { id: "fetchr:glow_item_frame", mc: "minecraft:glow_item_frame", name: "Glow Item Frame", cats: ["fetchr:glow_ink", "fetchr:leather"], w: 1 },
+      { id: "fetchr:pointed_dripstone", mc: "minecraft:pointed_dripstone", name: "Pointed Dripstone", cats: ["fetchr:dripstone_cave"], w: 1 },
+      { id: "fetchr:hanging_roots", mc: "minecraft:hanging_roots", name: "Hanging Roots", cats: ["fetchr:lush_cave"], w: 1 },
+      { id: "fetchr:glow_lichen", mc: "minecraft:glow_lichen", name: "Glow Lichen", cats: ["fetchr:shearable"], w: 2 },
+      { id: "fetchr:amethyst_shard", mc: "minecraft:amethyst_shard", name: "Amethyst Shard", cats: ["fetchr:amethyst"], w: 1 },
+      { id: "fetchr:spyglass", mc: "minecraft:spyglass", name: "Spyglass", cats: ["fetchr:amethyst"], w: 1 },
+      { id: "fetchr:hanging_acacia_sign", mc: "minecraft:acacia_hanging_sign", name: "Hanging Acacia Sign", cats: ["fetchr:basic_iron"], w: 3 },
+      { id: "fetchr:brush", mc: "minecraft:brush", name: "Brush", cats: ["fetchr:copper"], w: 3 },
+      { id: "fetchr:cherry_chest_boat", mc: "minecraft:cherry_chest_boat", name: "Cherry Chest Boat", cats: ["fetchr:cherry_grove"], w: 1 },
+      { id: "fetchr:pink_petals", mc: "minecraft:pink_petals", name: "Pink Petals", cats: ["fetchr:cherry_grove"], w: 1 },
+      { id: "fetchr:cherry_sapling", mc: "minecraft:cherry_sapling", name: "Cherry Sapling", cats: ["fetchr:cherry_grove"], w: 1 },
+      { id: "fetchr:carrot_on_a_stick", mc: "minecraft:carrot_on_a_stick", name: "Carrot on a Stick", cats: ["fetchr:roots"], w: 1 },
+      { id: "fetchr:baked_potato", mc: "minecraft:baked_potato", name: "Baked Potato", cats: ["fetchr:roots"], w: 3 },
+      { id: "fetchr:jungle_sapling", mc: "minecraft:jungle_sapling", name: "Jungle Sapling", cats: ["fetchr:jungle"], w: 6 },
+      { id: "fetchr:light_blue_bundle", mc: "minecraft:light_blue_bundle", name: "Light Blue Bundle", cats: ["fetchr:leather"], w: 2 },
+      { id: "fetchr:armadillo_scute", mc: "minecraft:armadillo_scute", name: "Armadillo Scute", cats: ["fetchr:armadillo"], w: 1 },
+      { id: "fetchr:wolf_armor", mc: "minecraft:wolf_armor", name: "Wolf Armor", cats: ["fetchr:armadillo"], w: 1 },
+      { id: "fetchr:poison_arrow", mc: "minecraft:tipped_arrow", name: "Poison Arrow", cats: ["fetchr:skeleton_drops", "fetchr:nighttime_mob_drops", "fetchr:swamp"], w: 1 },
+      { id: "fetchr:closed_eyeblossom", mc: "minecraft:closed_eyeblossom", name: "Closed Eyeblossom", cats: ["fetchr:pale_garden"], w: 3 },
+      { id: "fetchr:open_eyeblossom", mc: "minecraft:open_eyeblossom", name: "Open Eyeblossom", cats: ["fetchr:pale_garden"], w: 3 },
+      { id: "fetchr:resin_clump", mc: "minecraft:resin_clump", name: "Resin Clump", cats: ["fetchr:pale_garden", "fetchr:nighttime_mob_drops"], w: 2 },
+      { id: "fetchr:pale_hanging_moss", mc: "minecraft:pale_hanging_moss", name: "Pale Hanging Moss", cats: ["fetchr:pale_garden", "fetchr:shearable"], w: 1 },
+      { id: "fetchr:copper_lantern", mc: "minecraft:copper_lantern", name: "Copper Lantern", cats: ["fetchr:copper"], w: 3 },
+      { id: "fetchr:yellow_harness", mc: "minecraft:yellow_harness", name: "Yellow Harness", cats: ["fetchr:leather"], w: 2 },
+      { id: "fetchr:saddle", mc: "minecraft:saddle", name: "Saddle", cats: ["fetchr:leather"], w: 2 },
+      { id: "fetchr:iron_block", mc: "minecraft:iron_block", name: "Iron Block", cats: ["fetchr:basic_iron"], w: 1 },
+      { id: "fetchr:redstone_block", mc: "minecraft:redstone_block", name: "Redstone Block", cats: ["fetchr:redstone"], w: 1 },
+      { id: "fetchr:bookshelf", mc: "minecraft:bookshelf", name: "Bookshelf", cats: ["fetchr:book"], w: 1 },
+      { id: "fetchr:obsidian", mc: "minecraft:obsidian", name: "Obsidian", cats: ["fetchr:diamond"], w: 1 },
+      { id: "fetchr:melon", mc: "minecraft:melon", name: "Melon", cats: ["fetchr:jungle"], w: 2 },
+      { id: "fetchr:mossy_stone_bricks", mc: "minecraft:mossy_stone_bricks", name: "Mossy Stone Bricks", cats: ["fetchr:shearable"], w: 1 },
+      { id: "fetchr:jukebox", mc: "minecraft:jukebox", name: "Jukebox", cats: ["fetchr:diamond"], w: 2 },
+      { id: "fetchr:magma_block", mc: "minecraft:magma_block", name: "Magma Block", cats: ["fetchr:gold_and_ruined_portal"], w: 6 },
+      { id: "fetchr:bone_block", mc: "minecraft:bone_block", name: "Bone Block", cats: ["fetchr:skeleton_drops"], w: 2 },
+      { id: "fetchr:blast_furnace", mc: "minecraft:blast_furnace", name: "Blast Furnace", cats: ["fetchr:furnace"], w: 1 },
+      { id: "fetchr:raw_iron_block", mc: "minecraft:raw_iron_block", name: "Raw Iron Block", cats: ["fetchr:basic_iron"], w: 1 },
+      { id: "fetchr:red_bed", mc: "minecraft:red_bed", name: "Red Bed", cats: ["fetchr:wool"], w: 1 },
+      { id: "fetchr:target", mc: "minecraft:target", name: "Target", cats: ["fetchr:wheat"], w: 1 },
+      { id: "fetchr:snow", mc: "minecraft:snow", name: "Snow Layer", cats: ["fetchr:taiga"], w: 1 },
+      { id: "fetchr:stonecutter", mc: "minecraft:stonecutter", name: "Stonecutter", cats: ["fetchr:basic_iron"], w: 3 },
+      { id: "fetchr:jack_o_lantern", mc: "minecraft:jack_o_lantern", name: "Jack o'Lantern", cats: ["fetchr:pumpkin"], w: 1 },
+      { id: "fetchr:tnt", mc: "minecraft:tnt", name: "TNT", cats: ["fetchr:gunpowder"], w: 1 },
+      { id: "fetchr:lapis_block", mc: "minecraft:lapis_block", name: "Lapis Lazuli Block", cats: ["fetchr:lapis"], w: 1 },
+      { id: "fetchr:dispenser", mc: "minecraft:dispenser", name: "Dispenser", cats: ["fetchr:bow"], w: 1 },
+      { id: "fetchr:smoker", mc: "minecraft:smoker", name: "Smoker", cats: ["fetchr:furnace"], w: 1 },
+      { id: "fetchr:dried_kelp_block", mc: "minecraft:dried_kelp_block", name: "Dried Kelp Block", cats: ["fetchr:kelp"], w: 1 },
+      { id: "fetchr:hay_bale", mc: "minecraft:hay_block", name: "Hay Bale", cats: ["fetchr:wheat"], w: 1 },
+      { id: "fetchr:fletching_table", mc: "minecraft:fletching_table", name: "Fletching Table", cats: ["fetchr:flint"], w: 1 },
+      { id: "fetchr:lectern", mc: "minecraft:lectern", name: "Lectern", cats: ["fetchr:book"], w: 1 },
+      { id: "fetchr:raw_gold_block", mc: "minecraft:raw_gold_block", name: "Raw Gold Block", cats: ["fetchr:gold_and_ruined_portal"], w: 3 },
+      { id: "fetchr:gold_block", mc: "minecraft:gold_block", name: "Gold Block", cats: ["fetchr:gold_and_ruined_portal"], w: 3 },
+      { id: "fetchr:scaffolding", mc: "minecraft:scaffolding", name: "Scaffolding", cats: ["fetchr:jungle"], w: 3 },
+      { id: "fetchr:piston", mc: "minecraft:piston", name: "Piston", cats: ["fetchr:piston"], w: 1 },
+      { id: "fetchr:sticky_piston", mc: "minecraft:sticky_piston", name: "Sticky Piston", cats: ["fetchr:piston", "fetchr:nighttime_mob_drops", "fetchr:swamp"], w: 1 },
+      { id: "fetchr:orange_concrete", mc: "minecraft:orange_concrete", name: "Orange Concrete", cats: ["fetchr:sand"], w: 2 },
+      { id: "fetchr:pink_glazed_terracotta", mc: "minecraft:pink_glazed_terracotta", name: "Pink Glazed Terracotta", cats: ["fetchr:clay"], w: 2 },
+      { id: "fetchr:deepslate", mc: "minecraft:deepslate", name: "Deepslate", cats: ["fetchr:deepslate"], w: 1 },
+      { id: "fetchr:cracked_deepslate_bricks", mc: "minecraft:cracked_deepslate_bricks", name: "Cracked Deepslate Bricks", cats: ["fetchr:deepslate"], w: 1 },
+      { id: "fetchr:deepslate_tile_wall", mc: "minecraft:deepslate_tile_wall", name: "Deepslate Tile Wall", cats: ["fetchr:deepslate"], w: 1 },
+      { id: "fetchr:muddy_mangrove_roots", mc: "minecraft:muddy_mangrove_roots", name: "Muddy Mangrove Roots", cats: ["fetchr:mangrove"], w: 1 },
+      { id: "fetchr:packed_mud", mc: "minecraft:packed_mud", name: "Packed Mud", cats: ["fetchr:mangrove"], w: 1 },
+      { id: "fetchr:mud_bricks", mc: "minecraft:mud_bricks", name: "Mud Bricks", cats: ["fetchr:mangrove"], w: 1 },
+      { id: "fetchr:rooted_dirt", mc: "minecraft:rooted_dirt", name: "Rooted Dirt", cats: ["fetchr:lush_cave"], w: 1 },
+      { id: "fetchr:moss_block", mc: "minecraft:moss_block", name: "Moss Block", cats: ["fetchr:lush_cave"], w: 3 },
+      { id: "fetchr:flowering_azalea", mc: "minecraft:flowering_azalea", name: "Flowering Azalea", cats: ["fetchr:lush_cave"], w: 1 },
+      { id: "fetchr:spore_blossom", mc: "minecraft:spore_blossom", name: "Spore Blossom", cats: ["fetchr:lush_cave"], w: 3 },
+      { id: "fetchr:dripstone_block", mc: "minecraft:dripstone_block", name: "Dripstone Block", cats: ["fetchr:dripstone_cave"], w: 1 },
+      { id: "fetchr:raw_copper_block", mc: "minecraft:raw_copper_block", name: "Raw Copper Block", cats: ["fetchr:copper"], w: 1 },
+      { id: "fetchr:copper_block", mc: "minecraft:copper_block", name: "Copper Block", cats: ["fetchr:copper"], w: 1 },
+      { id: "fetchr:exposed_cut_copper", mc: "minecraft:exposed_cut_copper", name: "Exposed Cut Copper", cats: ["fetchr:copper"], w: 1 },
+      { id: "fetchr:big_dripleaf", mc: "minecraft:big_dripleaf", name: "Big Dripleaf", cats: ["fetchr:lush_cave"], w: 3 },
+      { id: "fetchr:tuff", mc: "minecraft:tuff", name: "Tuff", cats: ["fetchr:deepslate"], w: 3 },
+      { id: "fetchr:white_stained_glass", mc: "minecraft:white_stained_glass", name: "White Stained Glass", cats: ["fetchr:sand"], w: 1 },
+      { id: "fetchr:brown_banner", mc: "minecraft:brown_banner", name: "Brown Banner", cats: ["fetchr:wool"], w: 1 },
+      { id: "fetchr:amethyst_block", mc: "minecraft:amethyst_block", name: "Amethyst Block", cats: ["fetchr:amethyst"], w: 2 },
+      { id: "fetchr:calcite", mc: "minecraft:calcite", name: "Calcite", cats: ["fetchr:amethyst"], w: 2 },
+      { id: "fetchr:chiseled_resin_bricks", mc: "minecraft:chiseled_resin_bricks", name: "Chiseled Resin Bricks", cats: ["fetchr:pale_garden", "fetchr:nighttime_mob_drops"], w: 2 },
+      { id: "fetchr:creaking_heart", mc: "minecraft:creaking_heart", name: "Creaking Heart", cats: ["fetchr:pale_garden", "fetchr:nighttime_mob_drops"], w: 2 },
+      { id: "fetchr:pale_moss_carpet", mc: "minecraft:pale_moss_carpet", name: "Pale Moss Carpet", cats: ["fetchr:pale_garden"], w: 6 },
+      { id: "fetchr:lodestone", mc: "minecraft:lodestone", name: "Lodestone", cats: ["fetchr:lodestone"], w: 1 }
+    ];
+
+    // Pack formats — two sets, one per supported Fetchr version
+    const PACK_VERSIONS_52 = [
+      { format: 61, label: "1.21.4 (latest)" }, { format: 57, label: "1.21.2 - 1.21.3" },
+      { format: 48, label: "1.21 - 1.21.1" }, { format: 45, label: "1.20.5 - 1.20.6" },
+    ];
+    const PACK_VERSIONS_53 = [
+      { format: 88, label: "1.21.9 / 1.21.10 (latest)" }, { format: 80, label: "1.21.6" },
+      { format: 71, label: "1.21.5" }, { format: 61, label: "1.21.4" },
+      { format: 57, label: "1.21.2 - 1.21.3" }, { format: 48, label: "1.21 - 1.21.1" },
+      { format: 45, label: "1.20.5 - 1.20.6" },
+    ];
+    const MIN_FMT = 45, MAX_FMT_52 = 61, MAX_FMT_53 = 88;
+    function getPackVersions() { return state.fetchrVersion === '5.2' ? PACK_VERSIONS_52 : PACK_VERSIONS_53; }
+    function getMaxFmt() { return state.fetchrVersion === '5.2' ? MAX_FMT_52 : MAX_FMT_53; }
+    function getBaseItems() { return state.fetchrVersion === '5.2' ? BASE_ITEMS_52 : BASE_ITEMS_53; }
+
+    // Icon URL using minecraft.wiki CDN
+    function iconUrl(mc) {
+      // Convert minecraft:item_id to Title_Case_Name for the wiki image
+      const name = mc.replace('minecraft:', '');
+      // Use the Minecraft wiki's item image API (direct PNG URLs)
+      return `https://minecraft.wiki/images/Invicon_${name.split('_').map(w => w[0].toUpperCase() + w.slice(1)).join('_')}.png`;
+    }
+
+    // ================================================================
+    //  STATE
+    // ================================================================
+    const state = {
+      ns: 'my_fetchr_mod',
+      fetchrVersion: '5.3',
+      packFormat: 88,
+      overrides: {},   // { [id]: { disabled?, weight?, cats? } }
+      search: '',
+      previewOpen: false,
+      previewFile: 'modify',
+      collapsed: {},   // { [cat]: true }
+    };
+
+    // ================================================================
+    //  DERIVED HELPERS
+    // ================================================================
+    function arrEq(a, b) { return a.length === b.length && a.every((v, i) => v === b[i]); }
+
+    function eff(base) {
+      const ov = state.overrides[base.id] || {};
+      const disabled = ov.disabled === true;
+      const weight = ov.weight != null ? Number(ov.weight) : base.w;
+      const cats = ov.cats != null ? ov.cats : base.cats;
+      const weightChanged = ov.weight != null && Number(ov.weight) !== base.w;
+      const catsChanged = ov.cats != null && !arrEq(ov.cats.slice().sort(), base.cats.slice().sort());
+      const modified = !disabled && (weightChanged || catsChanged);
+      return { ...base, disabled, weight, cats, weightChanged, catsChanged, modified };
+    }
+    function allEff() { return getBaseItems().map(eff); }
+    function activeEff() { return allEff().filter(it => !it.disabled); }
+    function catLabel(id) { return id.replace('fetchr:', '').replace(/_/g, ' '); }
+
+    function computeProbs(active) {
+      const total = active.reduce((s, it) => s + it.weight, 0);
+      if (!total) return {};
+      const out = {};
+      active.forEach(it => { out[it.id] = it.weight / total; });
+      return out;
+    }
+
+    function simulateCards(active, trials = 600) {
+      if (active.length < 25) return { rate: 0 };
+      let successes = 0, firstFail = 25;
+      for (let t = 0; t < trials; t++) {
+        let pool = active.map(it => ({ w: it.weight, cats: it.cats }));
+        let failed = false;
+        for (let slot = 0; slot < 25; slot++) {
+          if (!pool.length) { failed = true; if (slot < firstFail) firstFail = slot; break; }
+          const tw = pool.reduce((s, it) => s + it.w, 0);
+          let r = Math.random() * tw, picked = pool[pool.length - 1];
+          for (const it of pool) { r -= it.w; if (r <= 0) { picked = it; break; } }
+          const rc = new Set(picked.cats);
+          pool = pool.filter(it => !it.cats.some(c => rc.has(c)));
+        }
+        if (!failed) successes++;
+      }
+      return { rate: successes / trials, failSlot: firstFail };
+    }
+
+    function validate(active, sim) {
+      const msgs = [];
+      if (!active.length) { msgs.push({ t: 'err', m: 'All items removed — no card can be generated.' }); return msgs; }
+      if (active.length < 25) msgs.push({ t: 'err', m: `Only ${active.length} items remain (25 required). Cards cannot be generated.` });
+      else if (active.length < 30) msgs.push({ t: 'warn', m: `Only ${active.length} items remain. Very tight pool — edge cases may fail.` });
+      if (active.length >= 25) {
+        const p = Math.round(sim.rate * 100);
+        if (sim.rate < 0.95) msgs.push({ t: 'err', m: `Card fill rate ~${p}% (pool runs out at slot ${(sim.failSlot || 0) + 1}). Too much category overlap.` });
+        else if (sim.rate < 1) msgs.push({ t: 'warn', m: `Card fill rate ~${p}%. Occasional dead-ends from category overlap.` });
+      }
+      const probs = computeProbs(active);
+      const dominant = active.filter(it => (probs[it.id] || 0) > 0.15);
+      if (dominant.length) msgs.push({ t: 'warn', m: `High-weight items (>15% chance): ${dominant.map(it => it.name).join(', ')}.` });
+      const zero = active.filter(it => it.weight <= 0);
+      if (zero.length) msgs.push({ t: 'err', m: `Items with weight ≤ 0 (can never appear): ${zero.map(it => it.name).join(', ')}.` });
+      const nocat = active.filter(it => !it.cats.length);
+      if (nocat.length) msgs.push({ t: 'warn', m: `Items with no categories (cannot appear on cards): ${nocat.map(it => it.name).join(', ')}.` });
+      if (!msgs.length || msgs.every(m => m.t === 'info')) msgs.unshift({ t: 'ok', m: `Pool healthy — ${active.length} items, ~${Math.round(sim.rate * 100)}% card fill rate across 600 simulated generated cards.` });
+      return msgs;
+    }
+
+    // ================================================================
+    //  FILE GENERATORS
+    // ================================================================
+    function genModify() {
+      const lines = ['# Generated by Fetchr Item Pool Editor', '# Place this datapack alongside the Fetchr datapack.', ''];
+      const rm = [], wt = [], ct = [];
+      allEff().forEach(it => {
+        const ov = state.overrides[it.id] || {};
+        const base = getBaseItems().find(b => b.id === it.id);
+        if (it.disabled) { rm.push(`data remove storage fetchr:registries items[{id: "${it.id}"}]`); return; }
+        if (ov.weight != null && Number(ov.weight) !== base.w) wt.push(`data modify storage fetchr:registries items[{id: "${it.id}"}].weight set value ${Math.max(1, Math.round(Number(ov.weight)))}`);
+        if (ov.cats != null && !arrEq(ov.cats.slice().sort(), base.cats.slice().sort())) ct.push(`data modify storage fetchr:registries items[{id: "${it.id}"}].categories set value [${ov.cats.map(c => `"${c}"`).join(', ')}]`);
+      });
+      if (!rm.length && !wt.length && !ct.length) return '# No changes yet.';
+      if (rm.length) { lines.push('# Removed items'); rm.forEach(l => lines.push(l)); lines.push(''); }
+      if (wt.length) { lines.push('# Weight overrides'); wt.forEach(l => lines.push(l)); lines.push(''); }
+      if (ct.length) { lines.push('# Category changes'); ct.forEach(l => lines.push(l)); lines.push(''); }
+      return lines.join('\n').trim();
+    }
+    function genTag() { return Object.keys(state.overrides).length ? JSON.stringify({ values: [`${state.ns}:modify_items`] }, null, 2) : '{\n  "values": []\n}'; }
+    function genMeta() { return JSON.stringify({ pack: { pack_format: state.packFormat, description: "Fetchr item pool modifications" } }, null, 2); }
+
+    // ================================================================
+    //  STATE MUTATION
+    // ================================================================
+    function setOv(id, key, val) {
+      if (!state.overrides[id]) state.overrides[id] = {};
+      if (val == null) { delete state.overrides[id][key]; if (!Object.keys(state.overrides[id]).length) delete state.overrides[id]; }
+      else state.overrides[id][key] = val;
+      scheduleRender();
+    }
+    function resetItem(id) { delete state.overrides[id]; scheduleRender(); }
+    function resetAll() { if (!Object.keys(state.overrides).length) return; if (!confirm('Reset all changes?')) return; state.overrides = {}; scheduleRender(); }
+
+    // Enable all items (clear overrides)
+    function enableAll() {
+      state.overrides = {};
+      scheduleRender();
+      if (state.previewOpen) renderPreview();
+    }
+
+    // Disable all items (set disabled on every base item)
+    function disableAll() {
+      const ov = {};
+      getBaseItems().forEach(b => { ov[b.id] = { disabled: true }; });
+      state.overrides = ov;
+      scheduleRender();
+      if (state.previewOpen) renderPreview();
+    }
+
+    // ================================================================
+    //  RENDER SCHEDULING
+    // ================================================================
+    let renderScheduled = false;
+    function scheduleRender() { if (!renderScheduled) { renderScheduled = true; requestAnimationFrame(doRender); } }
+
+    function doRender() {
+      renderScheduled = false;
+      const active = activeEff();
+      const probs = computeProbs(active);
+      const sim = simulateCards(active);
+      renderStats(active, sim);
+      renderGroups(probs, active);
+      renderValidation(active, sim);
+      if (state.previewOpen) renderPreview();
+    }
+
+    // ================================================================
+    //  STATS BAR
+    // ================================================================
+    function renderStats(active, sim) {
+      const all = allEff();
+      document.getElementById('stat-active').textContent = active.length;
+      document.getElementById('stat-disabled').textContent = all.filter(it => it.disabled).length;
+      document.getElementById('stat-modified').textContent = all.filter(it => it.modified).length;
+      const badge = document.getElementById('sim-badge');
+      badge.id = 'sim-badge';
+      if (active.length < 25) { badge.className = 'err'; badge.textContent = '\u2717 Pool too small'; }
+      else if (sim.rate >= 0.99) { badge.className = 'ok'; badge.textContent = '\u2713 Cards OK'; }
+      else if (sim.rate >= 0.9) { badge.className = 'warn'; badge.textContent = `\u26a0 ${Math.round(sim.rate * 100)}% card fill rate`; }
+      else { badge.className = 'err'; badge.textContent = `\u2717 ${Math.round(sim.rate * 100)}% card fill rate`; }
+    }
+
+    // ================================================================
+    //  GROUPS
+    // ================================================================
+    function filterItem(it) {
+      if (state.search) {
+        const q = state.search.toLowerCase();
+        if (!it.name.toLowerCase().includes(q) && !it.id.includes(q) && !it.mc.includes(q)) return false;
+      }
+      return true;
+    }
+
+    function renderGroups(probs, active) {
+      const wrap = document.getElementById('groups-wrap');
+      wrap.innerHTML = '';
+
+      const maxProb = Math.max(...Object.values(probs), 0.001);
+      const allItems = allEff();
+
+      // Decide which cats to show
+      const catsToShow = VANILLA_CATS;
+
+      let anyShown = false;
+      catsToShow.forEach(cat => {
+        // Items that have this cat in their effective cats
+        let items = allItems.filter(it => it.cats.includes(cat) && filterItem(it));
+        if (!items.length) return;
+        anyShown = true;
+
+        const section = document.createElement('div');
+        section.className = 'cat-section';
+        section.id = 'cat-sec-' + cat.replace('fetchr:', '').replace(/_/g, '-');
+        section.dataset.cat = cat;
+
+        const hdr = document.createElement('div');
+        hdr.className = 'cat-section-header';
+
+        const arrow = document.createElement('span');
+        arrow.className = 'cat-section-toggle' + (state.collapsed[cat] ? ' collapsed' : '');
+        arrow.textContent = '\u25BC';
+
+        const title = document.createElement('span');
+        title.className = 'cat-section-title';
+        title.textContent = catLabel(cat);
+
+        const activeCount = items.filter(it => !it.disabled).length;
+        const badge = document.createElement('span');
+        badge.className = 'cat-section-active' + (activeCount === 0 ? ' all-off' : activeCount < items.length ? ' some-off' : '');
+        badge.textContent = `${activeCount}/${items.length} active`;
+
+        hdr.appendChild(arrow); hdr.appendChild(title); hdr.appendChild(badge);
+        hdr.addEventListener('click', () => { state.collapsed[cat] = !state.collapsed[cat]; scheduleRender(); });
+
+        const gridWrap = document.createElement('div');
+        gridWrap.className = 'cat-items-grid-wrap' + (state.collapsed[cat] ? ' collapsed' : '');
+        const grid = document.createElement('div');
+        grid.className = 'cat-items-grid';
+
+        items.forEach(item => {
+          grid.appendChild(buildCard(item, probs, maxProb, cat));
+        });
+
+        gridWrap.appendChild(grid);
+        section.appendChild(hdr); section.appendChild(gridWrap);
+        wrap.appendChild(section);
+      });
+
+      if (!anyShown) {
+        const es = document.createElement('div');
+        es.className = 'empty-state';
+        es.textContent = 'No items match the current filters.';
+        wrap.appendChild(es);
+      }
+    }
+
+    // ================================================================
+    //  ITEM CARD
+    // ================================================================
+    function buildCard(item, probs, maxProb, parentCat) {
+      const prob = probs[item.id] || 0;
+      const barW = maxProb > 0 ? Math.round(prob / maxProb * 100) : 0;
+      const base = getBaseItems().find(b => b.id === item.id);
+
+      const card = document.createElement('div');
+      card.className = 'item-card' + (item.disabled ? ' disabled' : '') + (item.modified ? ' modified' : '');
+      card.title = `${item.name}\n${item.id}\nCategories: ${item.cats.map(catLabel).join(', ')}`;
+      card.dataset.id = item.id;
+
+      // Reset button (top right)
+      const resetBtn = document.createElement('button');
+      resetBtn.className = 'item-reset'; resetBtn.title = 'Reset to default'; resetBtn.textContent = '\u21BA';
+      resetBtn.addEventListener('click', e => { e.stopPropagation(); resetItem(item.id); });
+      card.appendChild(resetBtn);
+
+      // Icon — use cached source to avoid re-fetching on every re-render
+      const mcName = item.mc.replace('minecraft:', '');
+      if (_iconSrcCache[mcName] === null) {
+        // previously failed both item + block — show fallback
+        const fb = document.createElement('div');
+        fb.className = 'item-icon-fallback';
+        fb.textContent = '\u2753';
+        card.appendChild(fb);
+      } else {
+        const img = document.createElement('img');
+        img.className = 'item-icon';
+        img.alt = '';
+        if (_iconSrcCache[mcName]) {
+          // already resolved — set directly, no probing needed
+          img.src = _iconSrcCache[mcName];
+        } else {
+          // first time — probe item then block textures
+          img.loading = 'lazy';
+          img.src = _ASSET + 'item/' + (_ITEX[mcName] || mcName) + '.png';
+          img.onload = function () { _iconSrcCache[mcName] = this.src; };
+          let _iconTries = 0;
+          img.onerror = function () {
+            _iconTries++;
+            if (_iconTries === 1) {
+              this.src = _ASSET + 'block/' + (_BTEX[mcName] || mcName) + '.png';
+            } else {
+              _iconSrcCache[mcName] = null;
+              const fb = document.createElement('div');
+              fb.className = 'item-icon-fallback';
+              fb.textContent = '\u2753';
+              if (img.parentNode === card) card.replaceChild(fb, img);
+            }
+          };
+        }
+        card.appendChild(img);
+      }
+
+      // Name
+      const nm = document.createElement('div');
+      nm.className = 'item-card-name';
+      nm.textContent = item.name;
+      card.appendChild(nm);
+
+      // Weight stepper
+      const stepper = document.createElement('div');
+      stepper.className = 'weight-stepper';
+
+      const minusBtn = document.createElement('button');
+      minusBtn.className = 'wt-btn'; minusBtn.textContent = '\u2212'; // âˆ’
+      minusBtn.title = 'Decrease weight';
+      minusBtn.disabled = item.disabled || item.weight <= 1;
+      minusBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        const newW = Math.max(1, item.weight - 1);
+        setOv(item.id, 'weight', newW === base.w ? null : newW);
+      });
+
+      const valSpan = document.createElement('span');
+      valSpan.className = 'wt-val' + (item.weightChanged ? ' changed' : '');
+      valSpan.title = item.weightChanged ? `Default: ${base.w}` : '';
+      valSpan.textContent = item.disabled ? '\u2014' : String(item.weight); // — when disabled
+
+      const plusBtn = document.createElement('button');
+      plusBtn.className = 'wt-btn'; plusBtn.textContent = '+';
+      plusBtn.title = 'Increase weight';
+      plusBtn.disabled = item.disabled || item.weight >= 99;
+      plusBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        const newW = Math.min(99, item.weight + 1);
+        setOv(item.id, 'weight', newW === base.w ? null : newW);
+      });
+
+      stepper.appendChild(minusBtn); stepper.appendChild(valSpan); stepper.appendChild(plusBtn);
+      card.appendChild(stepper);
+
+      // Enable/Disable button
+      const toggle = document.createElement('button');
+      toggle.className = 'item-toggle-btn ' + (item.disabled ? 'off' : 'on');
+      toggle.textContent = item.disabled ? 'Removed' : 'Active';
+      toggle.addEventListener('click', e => {
+        e.stopPropagation();
+        setOv(item.id, 'disabled', item.disabled ? null : true);
+      });
+      card.appendChild(toggle);
+
+      // Prob shown in card title only (saves card height)
+      if (!item.disabled) {
+        card.title += `\nDraw chance: ${(prob * 100).toFixed(1)}%`;
+      }
+
+      return card;
+    }
+
+    // ================================================================
+    //  VALIDATION
+    // ================================================================
+    function renderValidation(active, sim) {
+      const panel = document.getElementById('validation');
+      panel.innerHTML = '';
+      const msgs = validate(active, sim);
+      if (!msgs.length) return;
+      const wrap = document.createElement('div'); wrap.className = 'val-msgs';
+      const icons = { err: '\u2717', warn: '\u26a0', ok: '\u2713', info: '\u2139' };
+      const cls = { err: 'val-err', warn: 'val-warn', ok: 'val-ok', info: 'val-info' };
+      msgs.forEach(m => {
+        const d = document.createElement('div'); d.className = 'val-msg ' + (cls[m.t] || '');
+        const ic = document.createElement('span'); ic.className = 'vicon'; ic.textContent = icons[m.t] || '';
+        const tx = document.createElement('span'); tx.textContent = m.m;
+        d.appendChild(ic); d.appendChild(tx); wrap.appendChild(d);
+      });
+      panel.appendChild(wrap);
+    }
+
+    // ================================================================
+    //  PREVIEW
+    // ================================================================
+    function renderPreview() {
+      const gens = { modify: genModify, tag: genTag, meta: genMeta };
+      document.getElementById('preview-code').textContent = (gens[state.previewFile] || genModify)();
+    }
+
+    // ================================================================
+    //  DOWNLOAD
+    // ================================================================
+    async function downloadZip() {
+      if (!Object.keys(state.overrides).length) { alert('No changes to export. Modify some items first.'); return; }
+      const active = activeEff();
+      const sim = simulateCards(active);
+      if (active.length < 25) { if (!confirm(`Warning: Only ${active.length} active items (25 required). Cards will not generate. Continue?`)) return; }
+      else if (sim.rate < 0.9) { if (!confirm(`Warning: ~${Math.round(sim.rate * 100)}% card fill rate. Continue?`)) return; }
+      const ns = state.ns || 'my_fetchr_mod';
+      const zip = new JSZip();
+      zip.file('pack.mcmeta', genMeta());
+      zip.file(`data/${ns}/function/modify_items.mcfunction`, genModify());
+      zip.file('data/fetchr/tags/function/post_registration.json', genTag());
+      const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 9 } });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = `${ns}-fetchr-item-pool.zip`;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+    }
+
+    // ================================================================
+    //  INIT & WIRING
+    // ================================================================
+
+    // Rebuild the Target MC dropdown from the currently selected Fetchr version's pack list
+    function repopulateVersionSelect() {
+      const sel = document.getElementById('version-select');
+      sel.innerHTML = '';
+      getPackVersions().forEach(({ format, label }) => {
+        const o = document.createElement('option'); o.value = format; o.textContent = `${label} (fmt ${format})`;
+        if (format === state.packFormat) o.selected = true; sel.appendChild(o);
+      });
+      const c = document.createElement('option'); c.value = 'custom'; c.textContent = 'Custom...'; sel.appendChild(c);
+    }
+
+    // Version dropdown — initial population
+    repopulateVersionSelect();
+
+    document.getElementById('version-select').addEventListener('change', function () {
+      if (this.value === 'custom') {
+        const v = prompt(`Pack format number (${MIN_FMT}-${getMaxFmt()}):`, state.packFormat);
+        if (!v) { this.value = state.packFormat; return; }
+        const n = parseInt(v);
+        if (isNaN(n) || n < 1) { alert('Invalid.'); this.value = state.packFormat; return; }
+        if (n < MIN_FMT || n > getMaxFmt()) { if (!confirm(`${n} is outside supported range (${MIN_FMT}-${getMaxFmt()}). Use anyway?`)) { this.value = state.packFormat; return; } }
+        state.packFormat = n;
+        const co = this.querySelector('option[value="custom"]'); co.textContent = `Custom: fmt ${n}`; co.value = n; this.value = n;
+      } else { state.packFormat = parseInt(this.value); }
+      if (state.previewOpen) renderPreview();
+    });
+
+    document.getElementById('fetchr-version-select').addEventListener('change', function () {
+      if (Object.keys(state.overrides).length) {
+        if (!confirm('Changing Fetchr version will reset all your item changes. Continue?')) {
+          this.value = state.fetchrVersion; return;
+        }
+      }
+      state.fetchrVersion = this.value;
+      state.overrides = {};
+      state.packFormat = state.fetchrVersion === '5.2' ? MAX_FMT_52 : MAX_FMT_53;
+      repopulateVersionSelect();
+      scheduleRender();
+      if (state.previewOpen) renderPreview();
+    });
+
+    document.getElementById('ns-input').addEventListener('input', function () {
+      this.value = this.value.replace(/[^a-z0-9_-]/g, '');
+      state.ns = this.value || 'my_fetchr_mod';
+      if (state.previewOpen) renderPreview();
+    });
+
+    document.getElementById('search-input').addEventListener('input', function () {
+      state.search = this.value; scheduleRender();
+    });
+
+    document.getElementById('download-btn').addEventListener('click', downloadZip);
+
+    document.getElementById('preview-toggle').addEventListener('click', function () {
+      state.previewOpen = !state.previewOpen;
+      this.classList.toggle('open', state.previewOpen);
+      document.getElementById('preview-body').classList.toggle('open', state.previewOpen);
+      if (state.previewOpen) renderPreview();
+    });
+
+    // Shortcut buttons: enable all / disable all
+    document.getElementById('enable-all-btn').addEventListener('click', function () {
+      enableAll();
+      if (state.previewOpen) renderPreview();
+    });
+    document.getElementById('disable-all-btn').addEventListener('click', function () {
+      if (!confirm('Disable all items? This will remove every item from the active pool. Continue?')) return;
+      disableAll();
+      if (state.previewOpen) renderPreview();
+    });
+
+    document.querySelectorAll('.preview-tab').forEach(tab => {
+      tab.addEventListener('click', function () {
+        document.querySelectorAll('.preview-tab').forEach(t => t.classList.remove('active'));
+        this.classList.add('active'); state.previewFile = this.dataset.file;
+        if (state.previewOpen) renderPreview();
+      });
+    });
+
+    doRender();
+  </script>
+</body>
+
+</html>
