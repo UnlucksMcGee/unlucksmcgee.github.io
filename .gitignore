@@ -1,4 +1,12 @@
-# Ignore VSCode local settings
+# Editor settings
 .vscode/
 
+# DDNet database dump (see README)
 *.sqlite
+*.sqlite.zip
+
+# Python
+__pycache__/
+
+# Test dependencies (tests/package.json)
+node_modules/

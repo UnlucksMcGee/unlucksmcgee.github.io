@@ -1,0 +1,75 @@
+name: Update DDNet data
+
+on:
+  schedule:
+    - cron: '0 4 2 * *'  # 04:00 UTC on the 2nd of every month
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-ddnet-data
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      DUMP_URL: https://ddnet.org/stats/ddnet.sqlite.zip
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+
+      - name: Pick a work directory with enough disk
+        run: |
+          df -h
+          # The temp disk at /mnt is much larger than the root fs on hosted runners.
+          if [ -d /mnt ] && sudo chown "$USER" /mnt 2>/dev/null; then
+            WORK=/mnt/ddnet
+          else
+            WORK="$RUNNER_TEMP/ddnet"
+          fi
+          mkdir -p "$WORK"
+          echo "WORK=$WORK" >> "$GITHUB_ENV"
+          # sqlite spills its GROUP BY sort to temp files; keep them off the root fs.
+          echo "SQLITE_TMPDIR=$WORK" >> "$GITHUB_ENV"
+          echo "Using $WORK"
+
+      - name: Download dump
+        run: |
+          curl -fSL --retry 5 --retry-delay 30 --retry-all-errors \
+            --no-progress-meter -o "$WORK/ddnet.sqlite.zip" "$DUMP_URL"
+          ls -lh "$WORK"
+          df -h "$WORK"
+
+      - name: Unzip dump
+        run: |
+          # unzip rather than streaming through funzip, which lacks Zip64 support
+          # (the single entry is >4 GB uncompressed).
+          unzip -l "$WORK/ddnet.sqlite.zip"
+          unzip -p "$WORK/ddnet.sqlite.zip" > "$WORK/ddnet.sqlite"
+          rm "$WORK/ddnet.sqlite.zip"
+          ls -lh "$WORK"
+          df -h "$WORK"
+
+      - name: Build map data
+        run: python scripts/build_ddnet_data.py "$WORK/ddnet.sqlite"
+
+      - name: Commit and push if changed
+        run: |
+          rm -f "$WORK/ddnet.sqlite"
+          git add js/map_data.js js/zaf_players.js
+          if git diff --cached --quiet -- js/map_data.js js/zaf_players.js; then
+            echo "No changes."
+            exit 0
+          fi
+          updated=$(sed -n 's/^const map_data_last_updated = "\(.*\)";$/\1/p' js/map_data.js)
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Update DDNet map data (${updated})"
+          git push
