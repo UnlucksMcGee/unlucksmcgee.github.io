@@ -35,3 +35,19 @@ test("autocomplete: substring match, bolds the matched range, caps at 50, keyboa
     assert.equal(doc.querySelectorAll(".autocomplete-items").length, 0)
     assert.deepEqual(w.jsdom_errors, [])
 })
+
+test("autocomplete: every name box opts out of browser autofill and password managers", () => {
+    const check = input => {
+        assert.equal(input.getAttribute("autocomplete"), "off")
+        assert.ok(input.hasAttribute("data-1p-ignore"))
+        assert.equal(input.getAttribute("data-lpignore"), "true")
+        assert.equal(input.getAttribute("data-bwignore"), "true")
+        assert.equal(input.getAttribute("data-form-type"), "other")
+    }
+    const w = load_page("ddnet.html")
+    w.add_textbox() // boxes added later get it too
+    const inputs = [...w.document.querySelectorAll(".username_text_input")]
+    assert.equal(inputs.length, 3)
+    inputs.forEach(check)
+    check(load_page("ddnet_rank.html").document.getElementById("text_player1"))
+})

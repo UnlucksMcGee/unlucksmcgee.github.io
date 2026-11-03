@@ -9,6 +9,16 @@ function autocomplete(inp, arr) {
   var currentFocus = -1;
   var currentList = null;
 
+  /*these are DDNet names, not logins: turn off the browser's own suggestions
+  and tell password managers to ignore the field*/
+  inp.setAttribute("autocomplete", "off");
+  inp.setAttribute("data-1p-ignore", "");             // 1Password
+  inp.setAttribute("data-lpignore", "true");          // LastPass
+  inp.setAttribute("data-bwignore", "true");          // Bitwarden
+  inp.setAttribute("data-form-type", "other");        // Dashlane
+  inp.setAttribute("spellcheck", "false");
+  inp.setAttribute("autocapitalize", "off");
+
   /*execute a function when someone writes in the text field:*/
   inp.addEventListener("input", function () {
     var val = this.value;
