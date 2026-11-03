@@ -79,9 +79,9 @@ function silent_console(window_errors) {
     return virtual_console
 }
 
-// Loads a page with its local js/ scripts inlined (js/map_data.js replaced by the stand-in, or dropped
+// Loads a page (query e.g. "?mode=rank" is added to its URL) with its local js/ scripts inlined (js/map_data.js replaced by the stand-in, or dropped
 // when map_data is null) and the Google Analytics snippet removed.
-function load_page(file, { saved_usernames = null, map_data = STAND_IN_MAP_DATA } = {}) {
+function load_page(file, { saved_usernames = null, map_data = STAND_IN_MAP_DATA, query = "" } = {}) {
     let html = fs.readFileSync(path.join(REPO, file), "utf8")
     const scripts = []
     html = html.replace(/<script\b([^>]*)>([\s\S]*?)<\/script>/g, (all, attrs, body) => {
@@ -98,7 +98,7 @@ function load_page(file, { saved_usernames = null, map_data = STAND_IN_MAP_DATA 
     const errors = []
     const dom = new JSDOM(html, {
         runScripts: "dangerously",
-        url: "https://unlucksmcgee.github.io/" + file,
+        url: "https://unlucksmcgee.github.io/" + file + query,
         virtualConsole: silent_console(errors),
     })
     const w = dom.window

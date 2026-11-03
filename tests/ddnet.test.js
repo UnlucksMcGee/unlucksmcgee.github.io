@@ -19,6 +19,21 @@ test("loads saved names, last-updated text and one default sort radio", () => {
     assert.equal(doc.querySelectorAll("input[name=sorting_list][checked]").length, 1)
 })
 
+test("defaults to unfinished-maps mode", () => {
+    assert.equal(doc.getElementById("ddnet_main").getAttribute("data-mode"), "unfinished")
+    assert.ok(doc.getElementById("sorting_easiest").checked)
+    assert.equal(w.location.search, "")
+})
+
+test("removing the last player row clears it instead", () => {
+    const page = load_page("ddnet.html", { saved_usernames: ["Solo"] })
+    const button = page.document.querySelector(".btn_remove")
+    button.click()
+    const boxes = page.document.querySelectorAll(".username_text_input")
+    assert.equal(boxes.length, 1)
+    assert.equal(boxes[0].value, "")
+})
+
 test("falls back to default names when nothing is saved", () => {
     const fresh = load_page("ddnet.html")
     assert.deepEqual([...fresh.document.querySelectorAll(".username_text_input")].map(i => i.value), ["UnlucksMcGee", "Eyesore"])

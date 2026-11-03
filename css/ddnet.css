@@ -1,4 +1,61 @@
-/* Styles for ddnet.html and ddnet_rank.html. Loaded after css/main.css (the shared site base). */
+/* Styles for ddnet.html. Loaded after css/main.css (the shared site base). */
+
+/* ---------- Modes ("unfinished" / "rank", set on <main data-mode>) ---------- */
+
+[data-mode="unfinished"] .rank_only,
+[data-mode="rank"] .unfinished_only {
+    display: none !important;
+}
+
+/* Rankings use one player: show only the first box, without its remove button */
+[data-mode="rank"] #textinputs .textdiv:not(:first-child),
+[data-mode="rank"] #textinputs .btn_remove {
+    display: none;
+}
+
+.mode_switch {
+    display: flex;
+    width: fit-content;
+    margin: 0 auto 1.5rem;
+    padding: 0.25rem;
+    gap: 0.25rem;
+    background-color: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    box-shadow: var(--shadow);
+}
+
+.mode_switch button {
+    padding: 0.45rem 1.1rem;
+    border: none;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.15s, color 0.15s;
+}
+
+.mode_switch button:hover {
+    color: var(--text);
+}
+
+.mode_switch button[aria-selected="true"] {
+    background-color: var(--accent);
+    color: var(--on-accent);
+}
+
+.mode_switch button:focus-visible {
+    outline: none;
+    box-shadow: var(--focus);
+}
+
+.field_note {
+    margin-top: -0.25rem;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
 
 .search_card {
     width: 100%;

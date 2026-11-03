@@ -49,5 +49,5 @@ test("autocomplete: every name box opts out of browser autofill and password man
     const inputs = [...w.document.querySelectorAll(".username_text_input")]
     assert.equal(inputs.length, 3)
     inputs.forEach(check)
-    check(load_page("ddnet_rank.html").document.getElementById("text_player1"))
+    load_page("ddnet.html", { query: "?mode=rank" }).document.querySelectorAll(".username_text_input").forEach(check)
 })

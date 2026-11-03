@@ -2,7 +2,7 @@
 
 ## DDNet data
 
-The DDNet pages (`ddnet.html`, `ddnet_rank.html`) read two generated files:
+The DDNet page (`ddnet.html`, with an "Unfinished maps" mode and a "Rankings" mode at `ddnet.html?mode=rank`; the old `ddnet_rank.html` now redirects there) reads two generated files:
 
 - `js/map_data.js`: median and top time for every map, plus the date of the dump
 - `js/zaf_players.js`: South African players (finishes on more than 10 distinct maps on the ZAF servers), used for autocomplete

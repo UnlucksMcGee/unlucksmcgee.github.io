@@ -200,9 +200,9 @@ main {
 
 .tool_list {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
     gap: 1rem;
-    max-width: 60rem;
+    max-width: 44rem;
     margin: 0 auto;
 }
 

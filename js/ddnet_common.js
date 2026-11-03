@@ -1,4 +1,4 @@
-// Shared helpers for ddnet.html and ddnet_rank.html.
+// Shared helpers for ddnet.html (both modes: unfinished maps and rankings).
 // Plain global functions (classic <script>, no modules). Load after js/map_data.js.
 // Never put untrusted strings (usernames, map names, server/player names) into innerHTML:
 // everything here builds DOM nodes and uses textContent.

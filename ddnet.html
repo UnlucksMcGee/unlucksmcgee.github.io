@@ -1,45 +1,23 @@
 <!DOCTYPE html>
-<html lang="en" itemscope itemtype="https://schema.org/Product">
+<html lang="en">
 
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <!-- Short description of the document (limit to 150 characters) -->
-    <!-- This content *may* be used as a part of search engine results. -->
-    <meta name="description" content="A utility for finding common unfinished maps between DDNet players." />
-    <!-- Control the behavior of search engine crawling and indexing -->
+    <meta name="description" content="Find DDNet maps to play next: unfinished maps in common between players, or the maps where your times rank lowest." />
     <meta name="robots" content="index,follow" />
-    <meta name="googlebot" content="index,follow" />
-    <!-- schema props -->
-    <meta itemprop="name" content="DDNet Unfinished Maps Finder" />
-    <meta itemprop="description" content="A utility for finding common unfinished maps between DDNet players." />
-    <meta itemprop="image" content="https://unlucksmcgee.github.io/images/ddnet_preview.png" />
-    <!-- Facebook specific starts -->
-    <meta property="fb:app_id" content="123456789" />
-    <meta property="og:url" content="https://unlucksmcgee.github.io" />
+    <meta property="og:url" content="https://unlucksmcgee.github.io/ddnet.html" />
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="DDNet Unfinished Maps Finder" />
+    <meta property="og:title" content="DDNet Map Finder" />
+    <meta property="og:description" content="Find DDNet maps to play next: unfinished maps in common between players, or the maps where your times rank lowest." />
     <meta property="og:image" content="https://unlucksmcgee.github.io/images/ddnet_preview.png" />
-    <meta property="og:image:alt" content="" />
-    <meta property="og:description" content="A utility for finding common unfinished maps between DDNet players." />
-    <meta property="og:site_name" content="DDNet Unfinished Maps Finder" />
+    <meta property="og:site_name" content="UnlucksMcGee" />
     <meta property="og:locale" content="en_US" />
-    <meta property="article:author" content="" />
-    <!-- Facebook specific ends -->
-    <!-- twitter specific starts -->
     <meta name="twitter:card" content="summary" />
-    <meta name="twitter:site" content="@site_account" />
-    <meta name="twitter:creator" content="@individual_account" />
-    <meta name="twitter:url" content="https://unlucksmcgee.github.io" />
-    <meta name="twitter:title" content="DDNet Unfinished Maps Finder" />
-    <meta name="twitter:description" content="A utility for finding common unfinished maps between DDNet players." />
+    <meta name="twitter:title" content="DDNet Map Finder" />
+    <meta name="twitter:description" content="Find DDNet maps to play next: unfinished maps in common between players, or the maps where your times rank lowest." />
     <meta name="twitter:image" content="https://unlucksmcgee.github.io/images/ddnet_preview.png" />
-    <meta name="twitter:image:alt" content="A utility for finding common unfinished maps between DDNet players." />
-    <!-- disallow Twitter from using your site's info for personalization purposes -->
-    <meta name="twitter:dnt" content="on" />
-    <!-- twitter specific ends -->
-    <!-- <link rel="icon" sizes="192x192" href="assets/favicon.ico" /> -->
-    <title>UnlucksMcGee - DDNet</title>
+    <title>DDNet Map Finder - UnlucksMcGee</title>
     <link href="css/main.css" rel="stylesheet" />
     <link href="css/ddnet.css" rel="stylesheet" />
     <link href="css/autocomplete.css" rel="stylesheet" />
@@ -62,17 +40,25 @@
     <header>
         <nav>
             <a href="/" class="nav_home">&larr; Home</a>
-            <h1>DDNet Unfinished Maps Finder</h1>
+            <h1>DDNet Map Finder</h1>
         </nav>
     </header>
-    <main>
+    <!-- data-mode is "unfinished" or "rank"; elements with .unfinished_only / .rank_only only show in that mode -->
+    <main id="ddnet_main" data-mode="unfinished">
+        <div class="mode_switch" role="tablist" aria-label="Mode">
+            <button type="button" role="tab" id="mode_tab_unfinished" aria-selected="true" onclick="set_mode('unfinished')">Unfinished maps</button>
+            <button type="button" role="tab" id="mode_tab_rank" aria-selected="false" onclick="set_mode('rank')">Rankings</button>
+        </div>
+
         <div class="page_intro">
-            <h2>Find unfinished maps you have in common</h2>
-            <p>Enter one or more players to see which maps none of them have finished yet.</p>
+            <h2 class="unfinished_only">Find unfinished maps for you or among your group</h2>
+            <p class="unfinished_only">Enter one or more players to see which maps are still unfinished for them.</p>
+            <h2 class="rank_only">Find maps to improve your rankings</h2>
+            <p class="rank_only">See every finished map for a player, sorted by where their time ranks.</p>
         </div>
 
         <div class="card search_card">
-            <div class="server_loader">
+            <div class="server_loader unfinished_only">
                 <label class="toggle">
                     <input type="checkbox" id="show_hide_usernames" onclick="document.getElementById('server_names_div').style.display = this.checked ? 'block' : 'none'; if (this.checked) {loadServerNames()};">
                     Load names from a server
@@ -88,31 +74,36 @@
                 </div>
             </div>
 
-            <p class="field_label">Players <span class="field_hint">(names are case-sensitive)</span></p>
+            <p class="field_label"><span class="unfinished_only">Players</span><span class="rank_only">Player</span> <span class="field_hint">(names are case-sensitive)</span></p>
             <div id="textinputs">
                 <div class="textdiv">
-                    <input type="text" class="username_text_input" value="UnlucksMcGee" aria-label="Player name"><button class="btn btn_icon btn_remove" title="Remove player" aria-label="Remove player" onclick="this.parentElement.remove()">&times;</button>
+                    <input type="text" class="username_text_input" value="UnlucksMcGee" aria-label="Player name"><button class="btn btn_icon btn_remove" title="Remove player" aria-label="Remove player" onclick="remove_player_row(this)">&times;</button>
                 </div>
                 <div class="textdiv">
-                    <input type="text" class="username_text_input" value="Eyesore" aria-label="Player name"><button class="btn btn_icon btn_remove" title="Remove player" aria-label="Remove player" onclick="this.parentElement.remove()">&times;</button>
+                    <input type="text" class="username_text_input" value="Eyesore" aria-label="Player name"><button class="btn btn_icon btn_remove" title="Remove player" aria-label="Remove player" onclick="remove_player_row(this)">&times;</button>
                 </div>
             </div>
+            <p class="field_note rank_only" id="rank_extra_players_note">Rankings use the first player only.</p>
             <div class="search_actions">
-                <button class="btn btn_ghost" onclick="add_textbox()">+ Add player</button>
+                <button class="btn btn_ghost unfinished_only" onclick="add_textbox(true)">+ Add player</button>
                 <button id="search_button" class="btn btn_primary btn_block" onclick="search()">Search</button>
             </div>
         </div>
 
         <div id="results_section_div" style="display: none;">
             <section class="results_block">
-                <h3 class="section_title">Players</h3>
+                <h3 class="section_title"><span class="unfinished_only">Players</span><span class="rank_only">Player</span></h3>
                 <div id="player_results_div"></div>
             </section>
-            <h3 class="section_title">Unfinished maps</h3>
+            <h3 class="section_title"><span class="unfinished_only">Unfinished maps</span><span class="rank_only">Finished maps</span></h3>
             <div id="results_sorting_buttons_div" style="display: none;">
                 <div class="sort_row">
                     <span class="sort_label" id="sort_label">Sort by</span>
                     <div class="sort_options" role="radiogroup" aria-labelledby="sort_label" aria-describedby="sort_description">
+                        <div class="rank_only">
+                            <input type="radio" id="sorting_percentile" name="sorting_list" data-description="Your weakest ranks first: the best maps to improve on" value="percentile" onclick="display_results('sorting_percentile');">
+                            <label for="sorting_percentile">Lowest percentile</label>
+                        </div>
                         <div>
                             <input type="radio" id="sorting_easiest" name="sorting_list" data-description="Fewest points first, then most finishes" value="easiest" checked onclick="display_results('sorting_easiest');">
                             <label for="sorting_easiest">Easiest</label>
@@ -141,30 +132,111 @@
 
 <script>
     const MAX_PLAYERS = 64
+    const MODES = {
+        "unfinished": { "default_sort": "sorting_easiest" },
+        "rank": { "default_sort": "sorting_percentile" },
+    }
 
     for (const textinput_element of document.getElementsByClassName("username_text_input")) {
         autocomplete(textinput_element, zaf_players);
     }
 
+    const main_element = document.getElementById("ddnet_main")
     const textinputs_div = document.getElementById("textinputs")
     const results_section_div = document.getElementById("results_section_div")
     const map_results_div = document.getElementById("map_results_div")
     const results_sorting_buttons_div = document.getElementById("results_sorting_buttons_div")
     const player_results_div = document.getElementById("player_results_div")
+    const search_button = document.getElementById("search_button")
+
+    let current_mode = "unfinished"
+    let latest_search_id = 0
+
+    // Unfinished-maps mode results
     let common_unfinished_maps_dict = {} // key is server type e.g. Novice, value is Set of map names
     let unfinished_map_details_dict = {} // first key is server type e.g. Novice, nested key is map name with details
     let player_points = {}
     let usernames_list = []
-    let latest_search_id = 0
+
+    // Rankings mode results
+    let finished_maps_dict = {} // key is server type e.g. Novice, value is array of finished map names
+    let finished_map_details_dict = {} // first key is server type e.g. Novice, nested key is map name with details
+    let current_username = ""
+    let current_player_points = null
 
     show_map_data_last_updated()
+
+    // ---------- Mode ----------
+
+    function get_mode_from_url() {
+        return new URLSearchParams(window.location.search).get("mode") === "rank" ? "rank" : "unfinished"
+    }
+
+    // Switches between "unfinished" and "rank". Changing mode clears the shown results and drops
+    // a search that is still loading. The mode is kept in the URL (?mode=rank).
+    function set_mode(mode) {
+        if (!(mode in MODES)) {
+            mode = "unfinished"
+        }
+        const changed = mode !== current_mode
+        current_mode = mode
+        main_element.setAttribute("data-mode", mode)
+        for (const name in MODES) {
+            document.getElementById("mode_tab_" + name).setAttribute("aria-selected", String(name === mode))
+        }
+        map_results_div.classList.toggle("wide_tables", mode === "rank")
+        select_sorting_radio(MODES[mode]["default_sort"])
+        update_extra_players_note()
+
+        if (changed) {
+            latest_search_id++ // ignore any search still loading
+            search_button.disabled = false
+            results_section_div.style.display = "none"
+            clear_element(map_results_div)
+            clear_element(player_results_div)
+        }
+
+        const url = new URL(window.location.href)
+        if (mode === "rank") {
+            url.searchParams.set("mode", "rank")
+        } else {
+            url.searchParams.delete("mode")
+        }
+        try {
+            window.history.replaceState(null, "", url)
+        } catch (err) {
+            // e.g. file:// pages: the mode still works, it just isn't kept in the URL
+        }
+    }
+
+    // ---------- Player textboxes ----------
 
     function get_num_textboxes() {
         return document.getElementsByClassName("textdiv").length
     }
 
-    // Returns false if the 64-player cap was reached
-    function add_textbox() {
+    function get_entered_usernames() {
+        return [...document.getElementsByClassName("username_text_input")].map(input => input.value)
+    }
+
+    // Rankings mode only shows the first box; say so when the others hold names
+    function update_extra_players_note() {
+        document.getElementById("rank_extra_players_note").style.display = (get_num_textboxes() > 1) ? "" : "none"
+    }
+
+    // Removes a player row, but always keeps at least one box (the last one is just cleared)
+    function remove_player_row(button) {
+        const row = button.closest(".textdiv")
+        if (get_num_textboxes() <= 1) {
+            row.querySelector("input").value = ""
+        } else {
+            row.remove()
+        }
+        update_extra_players_note()
+    }
+
+    // Returns false if the 64-player cap was reached. focus: move the cursor into the new box
+    function add_textbox(focus = false) {
         if (get_num_textboxes() >= MAX_PLAYERS) {
             window.alert("Max " + MAX_PLAYERS + " players allowed.")
             return false
@@ -182,9 +254,9 @@
         new_delete_button.className = "btn btn_icon btn_remove"
         new_delete_button.title = "Remove player"
         new_delete_button.setAttribute("aria-label", "Remove player")
-        new_delete_button.textContent = "×"
+        new_delete_button.textContent = "\u00D7"
         new_delete_button.addEventListener("click", function () {
-            new_div.remove()
+            remove_player_row(new_delete_button)
         })
 
         new_div.appendChild(new_input)
@@ -192,6 +264,10 @@
         textinputs_div.appendChild(new_div)
 
         autocomplete(new_input, zaf_players);
+        update_extra_players_note()
+        if (focus) {
+            new_input.focus()
+        }
         return true
     }
 
@@ -201,6 +277,7 @@
             return
         }
         textdivs[textdivs.length - 1].remove()
+        update_extra_players_note()
     }
 
     // Resize the textbox list to fit the names (capped at 64) and fill them in
@@ -221,7 +298,7 @@
     }
 
     function loadUsernamesFromStorage() {
-        // Load last used usernames on page load
+        // Load last used usernames on page load (both modes share the list)
         let saved_usernames = load_saved_usernames()
         if (!saved_usernames) {
             return
@@ -232,6 +309,9 @@
         fill_textboxes(saved_usernames)
     }
     loadUsernamesFromStorage()
+    set_mode(get_mode_from_url())
+
+    // ---------- Unfinished-maps mode ----------
 
     // Returns {type: Set(map names)} of maps unfinished by every player.
     // A type only counts if every player has it; a map only if it's unfinished for all of them.
@@ -278,18 +358,48 @@
         return unfinished
     }
 
+    // ---------- Rankings mode ----------
+
+    // Returns {maps: {type: [map names]}, details: {type: {map: {...}}}} for maps the player has finished
+    function collect_finished_maps(player_json) {
+        const maps_dict = {}
+        const details_dict = {}
+        for (const server_type in player_json["types"]) {
+            const maps = (player_json["types"][server_type] || {})["maps"] || {}
+            maps_dict[server_type] = []
+            details_dict[server_type] = {}
+            for (const map_name in maps) {
+                const map_info = maps[map_name]
+                if (map_info["finishes"] > 0) {
+                    maps_dict[server_type].push(map_name)
+                    details_dict[server_type][map_name] = {
+                        "total_finishes": map_info["total_finishes"],
+                        "points": map_info["points"],
+                        "rank": map_info["rank"],
+                        "time": map_info["time"],
+                        "rank_percentile": rank_percentile(map_info["rank"], map_info["total_finishes"])
+                    }
+                }
+            }
+        }
+        return { "maps": maps_dict, "details": details_dict }
+    }
+
+    // ---------- Search (both modes) ----------
+
     function search() {
-        const new_usernames = []
-        for (const text_div of document.getElementsByClassName("textdiv")) {
-            const username = text_div.getElementsByTagName("input")[0].value
-            if (username == "") {
-                window.alert("Please fill in all the textboxes (or remove unused ones)")
+        const new_usernames = get_entered_usernames()
+        if (current_mode === "rank") {
+            if (new_usernames[0] == "") {
+                window.alert("Please fill in the player name")
                 return
             }
-            new_usernames.push(username)
+        } else if (new_usernames.includes("")) {
+            window.alert("Please fill in all the textboxes (or remove unused ones)")
+            return
         }
 
-        // Save usernames to local storage for next load
+        // Save the whole list for next load, also in rankings mode, so switching modes keeps it
         save_usernames(new_usernames)
 
         results_section_div.style.display = "block"
@@ -298,10 +408,18 @@
         results_sorting_buttons_div.style.display = "none"
 
         // Only one search at a time, so repeated clicks can't pile up requests to ddnet.org
-        const search_button = document.getElementById("search_button")
         search_button.disabled = true
         const search_id = ++latest_search_id
-        get_all_players_json(new_usernames, search_id).finally(() => { search_button.disabled = false })
+        const done = () => {
+            if (search_id == latest_search_id) {
+                search_button.disabled = false
+            }
+        }
+        if (current_mode === "rank") {
+            get_player_json(new_usernames[0], search_id).finally(done)
+        } else {
+            get_all_players_json(new_usernames, search_id).finally(done)
+        }
     }
 
     async function get_all_players_json(new_usernames, search_id) {
@@ -312,7 +430,7 @@
             results = new_usernames.map(username => ({ "username": username, "json": null, "error": err }))
         }
         if (search_id != latest_search_id) {
-            return // a newer search was started
+            return // a newer search was started, or the mode changed
         }
 
         const failed_results = results.filter(result => result.error)
@@ -335,7 +453,7 @@
             player_points = new_player_points
             unfinished_map_details_dict = new_details_dict
             common_unfinished_maps_dict = intersect_unfinished_maps(per_player_unfinished)
-            display_results("sorting_easiest")
+            display_results(MODES["unfinished"]["default_sort"])
         } catch (err) {
             console.log(err)
             results_section_div.style.display = "none"
@@ -343,13 +461,57 @@
         }
     }
 
+    async function get_player_json(username, search_id) {
+        let player_json
+        try {
+            player_json = await fetch_player_json(username)
+        } catch (err) {
+            if (search_id == latest_search_id) {
+                console.log(err)
+                results_section_div.style.display = "none"
+                window.alert(err.message)
+            }
+            return
+        }
+        if (search_id != latest_search_id) {
+            return // a newer search was started, or the mode changed
+        }
+
+        try {
+            const collected = collect_finished_maps(player_json)
+            current_username = username
+            current_player_points = get_player_points(player_json)
+            finished_maps_dict = collected["maps"]
+            finished_map_details_dict = collected["details"]
+            display_results(MODES["rank"]["default_sort"])
+        } catch (err) {
+            console.log(err)
+            results_section_div.style.display = "none"
+            window.alert("Error processing player data: " + err.message)
+        }
+    }
+
+    // ---------- Results (both modes) ----------
+
     function display_results(radio_button_id) {
         select_sorting_radio(radio_button_id)
 
         clear_element(map_results_div)
         clear_element(player_results_div)
 
-        // Create player links
+        if (current_mode === "rank") {
+            display_rank_results(radio_button_id)
+        } else {
+            display_unfinished_results(radio_button_id)
+        }
+
+        if (!map_results_div.hasChildNodes()) {
+            map_results_div.textContent = "None"
+        }
+        results_sorting_buttons_div.style.display = ""
+    }
+
+    function display_unfinished_results(radio_button_id) {
         for (const username of usernames_list) {
             player_results_div.appendChild(create_player_link(username, player_points[username]))
         }
@@ -358,11 +520,8 @@
             const details = unfinished_map_details_dict[server_type] || {}
             const sorted_map_names = Array.from(common_unfinished_maps_dict[server_type]).sort(get_map_comparator(radio_button_id, details))
             if (sorted_map_names.length == 0) {
-                // Skip creating section for empty table
-                continue
+                continue // skip empty tables
             }
-
-
             const rows = sorted_map_names.map(map_name => [
                 create_map_link(map_name),
                 details[map_name] ? details[map_name]["points"] : null,
@@ -371,11 +530,29 @@
             ])
             map_results_div.appendChild(create_map_section(server_type, ["Map Name", "Points", "Finishes", "Median / Top Time"], rows))
         }
-        if (!map_results_div.hasChildNodes()) {
-            map_results_div.textContent = "None"
-        }
-        results_sorting_buttons_div.style.display = ""
     }
+
+    function display_rank_results(radio_button_id) {
+        player_results_div.appendChild(create_player_link(current_username, current_player_points))
+
+        for (const server_type in finished_maps_dict) {
+            const details = finished_map_details_dict[server_type] || {}
+            const sorted_map_names = finished_maps_dict[server_type].slice().sort(get_map_comparator(radio_button_id, details))
+            if (sorted_map_names.length == 0) {
+                continue // skip empty tables
+            }
+            const rows = sorted_map_names.map(map_name => [
+                create_map_link(map_name),
+                details[map_name]["points"],
+                format_value(details[map_name]["rank"]) + "/" + format_value(details[map_name]["total_finishes"]),
+                format_percentile(details[map_name]["rank_percentile"]),
+                format_time(details[map_name]["time"]) + " / " + format_time(get_median_time(map_name)) + " / " + format_time(get_top_time(map_name))
+            ])
+            map_results_div.appendChild(create_map_section(server_type, ["Map Name", "Points", "Rank/Finishes", "%ile", "Your / Median / Top Time"], rows))
+        }
+    }
+
+    // ---------- Load names from a server (unfinished-maps mode) ----------
 
     function set_server_dropdown_placeholder(server_selection_dropdown, text) {
         const option = document.createElement("option")
@@ -448,7 +625,6 @@
         }
         fill_textboxes(JSON.parse(selected_server))
     }
-
 </script>
 
 </html>
