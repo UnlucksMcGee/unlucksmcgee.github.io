@@ -8,6 +8,8 @@ const { REPO, rank_player, load_page, tick, cell_texts } = require("./helpers")
 const w = load_page("ddnet.html", { saved_usernames: [rank_player.player, "Eyesore"], query: "?mode=rank" })
 const doc = w.document
 const player_input = () => doc.querySelector(".username_text_input")
+const notice_text = d => d.getElementById("search_notice").hidden ? null
+    : d.getElementById("search_notice_text").textContent + " " + [...d.querySelectorAll("#search_notice_list li")].map(li => li.textContent).join(" | ")
 const data_rows = () => [...doc.querySelectorAll(".map_section tr")].filter(tr => tr.querySelector("td"))
 
 test("radio defaults and saved name", () => {
@@ -19,9 +21,8 @@ test("radio defaults and saved name", () => {
     assert.equal(doc.getElementById("mode_tab_rank").getAttribute("aria-selected"), "true")
     assert.equal(doc.getElementById("mode_tab_unfinished").getAttribute("aria-selected"), "false")
     assert.ok(doc.getElementById("map_results_div").classList.contains("wide_tables"))
-    // the second saved name is kept (hidden in this mode), with a note saying only the first is used
+    // the second saved name is kept (hidden in this mode)
     assert.equal(doc.querySelectorAll(".username_text_input").length, 2)
-    assert.equal(doc.getElementById("rank_extra_players_note").style.display, "")
 })
 
 test("search renders finished maps sorted by percentile", async () => {
@@ -76,7 +77,10 @@ test("not-found message", async () => {
     w.alerts.length = 0
     w.search()
     await tick()
-    assert.deepEqual(w.alerts, ['Player not found: "zzqx no such" (names are case-sensitive)'])
+    assert.deepEqual(w.alerts, [])
+    assert.match(notice_text(doc), /^Could not load the player: zzqx no such: not found on ddnet\.org/)
+    assert.ok(doc.getElementById("remove_skipped_button").hidden) // one box: nothing to remove
+    assert.ok(player_input().classList.contains("input_error"))
     assert.equal(doc.getElementById("results_section_div").style.display, "none")
 })
 
@@ -95,8 +99,8 @@ test("Search button is disabled while searching and re-enabled after", async () 
     assert.ok(button.disabled)
     await tick()
     assert.ok(!button.disabled)
-    assert.equal(w.alerts.length, 1)
-    assert.match(w.alerts[0], /Network error while loading "NetFail"/)
+    assert.deepEqual(w.alerts, [])
+    assert.equal(notice_text(doc), "Could not load the player: NetFail: couldn't reach ddnet.org")
 })
 
 test("no uncaught page script errors", () => {
@@ -143,11 +147,13 @@ test("switching modes clears results, drops a loading search and updates the URL
     assert.deepEqual(page.jsdom_errors, [])
 })
 
-test("an empty first name is rejected in rankings mode", () => {
+test("an empty first name gives a message in rankings mode", () => {
     const page = load_page("ddnet.html", { query: "?mode=rank" })
     page.document.querySelector(".username_text_input").value = ""
     page.search()
-    assert.deepEqual(page.alerts, ["Please fill in the player name"])
+    assert.deepEqual(page.alerts, [])
+    assert.equal(notice_text(page.document), "Enter a player name to search. ")
+    assert.deepEqual(page.fetch_log, [])
 })
 
 test("old ddnet_rank.html redirects to rankings mode", () => {

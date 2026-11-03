@@ -4,8 +4,11 @@
 // everything here builds DOM nodes and uses textContent.
 
 const DDNET_PLAYER_JSON_URL = "https://ddnet.org/players/?json2="
+const DDNET_PLAYER_SEARCH_URL = "https://ddnet.org/players/?query="
 const DDNET_MAX_CONCURRENT_FETCHES = 8
 const DDNET_SAVED_USERNAMES_KEY = "usernames"
+const DDNET_SAVED_REGION_KEY = "ddnet_region"
+const DDNET_MASTER_SERVERS_URL = "https://master1.ddnet.org/ddnet/15/servers.json"
 
 // ---------- URLs ----------
 
@@ -114,30 +117,42 @@ function get_map_data_last_updated() {
 
 // ---------- Fetching player data ----------
 
-// Resolves to the player's json2 object, or rejects with an Error whose message names the player
-// and says what went wrong (network, HTTP status, bad JSON, or not found).
+// Error for one player's lookup. reason is "not_found", "network", "http" or "bad_data";
+// summary is a short description without the name (e.g. for a list of skipped players).
+function player_fetch_error(message, reason, summary) {
+    const err = new Error(message)
+    err.reason = reason
+    err.summary = summary
+    return err
+}
+
+// Resolves to the player's json2 object, or rejects with a player_fetch_error whose message names
+// the player and says what went wrong (network, HTTP status, bad JSON, or not found).
 async function fetch_player_json(username) {
     let response
     try {
         response = await fetch(DDNET_PLAYER_JSON_URL + encodeURIComponent(username))
     } catch (err) {
-        throw new Error("Network error while loading \"" + username + "\" (ddnet.org unreachable or blocked)")
+        throw player_fetch_error("Network error while loading \"" + username + "\" (ddnet.org unreachable or blocked)",
+            "network", "couldn't reach ddnet.org")
     }
     if (!response.ok) {
-        throw new Error("ddnet.org returned HTTP " + response.status + " for \"" + username + "\"")
+        throw player_fetch_error("ddnet.org returned HTTP " + response.status + " for \"" + username + "\"",
+            "http", "ddnet.org error (HTTP " + response.status + ")")
     }
     let player_json
     try {
         player_json = await response.json()
     } catch (err) {
-        throw new Error("ddnet.org sent invalid data for \"" + username + "\"")
+        throw player_fetch_error("ddnet.org sent invalid data for \"" + username + "\"", "bad_data", "invalid data from ddnet.org")
     }
-    // ddnet.org returns an empty object (HTTP 200) for unknown players
+    // ddnet.org returns an empty object (HTTP 200) for unknown players, and for players without any finishes
     if (player_json === null || typeof player_json !== "object" || Object.keys(player_json).length === 0) {
-        throw new Error("Player not found: \"" + username + "\" (names are case-sensitive)")
+        throw player_fetch_error("Player not found: \"" + username + "\" (names are case-sensitive)",
+            "not_found", "not found on ddnet.org (no finishes, or a different spelling: names are case-sensitive)")
     }
     if (typeof player_json["types"] !== "object" || player_json["types"] === null) {
-        throw new Error("Unexpected data format from ddnet.org for \"" + username + "\"")
+        throw player_fetch_error("Unexpected data format from ddnet.org for \"" + username + "\"", "bad_data", "unexpected data from ddnet.org")
     }
     return player_json
 }
@@ -169,9 +184,104 @@ async function fetch_all_players_json(usernames) {
     return usernames.map(username => unique_results[unique_usernames.indexOf(username)])
 }
 
+// Player name suggestions from ddnet.org's own search (case-insensitive substring, about 12 results).
+// Resolves to [{name, points}] (points may be null); rejects on network/HTTP errors or when aborted.
+async function search_ddnet_players(query, signal) {
+    const response = await fetch(DDNET_PLAYER_SEARCH_URL + encodeURIComponent(query), { signal: signal })
+    if (!response.ok) {
+        throw new Error("ddnet.org returned HTTP " + response.status + " for player search")
+    }
+    const results = await response.json()
+    if (!Array.isArray(results)) {
+        return []
+    }
+    return results
+        .filter(result => result && typeof result["name"] === "string")
+        .map(result => ({ "name": result["name"], "points": is_valid_number(result["points"]) ? result["points"] : null }))
+}
+
 function get_player_points(player_json) {
     const points = player_json && player_json["points"]
     return (points && is_valid_number(points["points"])) ? points["points"] : null
+}
+
+// ---------- Game servers and countries ----------
+
+// Resolves to the master server list's array of servers; rejects on network/HTTP errors.
+async function fetch_ddnet_servers() {
+    const response = await fetch(DDNET_MASTER_SERVERS_URL)
+    if (!response.ok) {
+        throw new Error("HTTP " + response.status)
+    }
+    const data = await response.json()
+    return (data && Array.isArray(data["servers"])) ? data["servers"] : []
+}
+
+function is_country_code(code) {
+    return typeof code === "string" && /^[a-z]{2}$/.test(code)
+}
+
+// "af:za" -> "za". null when the location has no usable country code.
+function server_country(server) {
+    const location = server && typeof server["location"] === "string" ? server["location"].toLowerCase() : ""
+    const code = location.split(":")[1]
+    return is_country_code(code) ? code : null
+}
+
+function is_ddrace_server(server) {
+    return Boolean(server && server["info"] && server["info"]["game_type"] === "DDraceNetwork")
+}
+
+function server_clients(server) {
+    const clients = server && server["info"] && server["info"]["clients"]
+    return Array.isArray(clients) ? clients : []
+}
+
+// [{code, servers, online}] for every country with DDNet (DDraceNetwork) servers,
+// most players online first, then by name.
+function summarise_server_countries(servers) {
+    const by_code = {}
+    for (const server of servers) {
+        const code = server_country(server)
+        if (code === null || !is_ddrace_server(server)) {
+            continue
+        }
+        by_code[code] = by_code[code] || { "code": code, "servers": 0, "online": 0 }
+        by_code[code]["servers"]++
+        by_code[code]["online"] += server_clients(server).length
+    }
+    return Object.values(by_code).sort((a, b) => (b["online"] - a["online"]) || country_name(a["code"]).localeCompare(country_name(b["code"])))
+}
+
+// "za" -> "South Africa" (falls back to "ZA" where Intl.DisplayNames is missing)
+function country_name(code) {
+    try {
+        const name = new Intl.DisplayNames(["en"], { type: "region" }).of(code.toUpperCase())
+        if (name && name !== code.toUpperCase()) {
+            return name
+        }
+    } catch (err) {
+        // unsupported browser or unknown code
+    }
+    return code.toUpperCase()
+}
+
+// Saved region: "global" or a two-letter country code.
+function load_saved_region() {
+    try {
+        const saved = localStorage.getItem(DDNET_SAVED_REGION_KEY)
+        return is_country_code(saved) ? saved : "global"
+    } catch (err) {
+        return "global"
+    }
+}
+
+function save_region(region) {
+    try {
+        localStorage.setItem(DDNET_SAVED_REGION_KEY, region)
+    } catch (err) {
+        console.log("Could not save region", err)
+    }
 }
 
 // ---------- Sorting ----------
@@ -334,4 +444,9 @@ function save_usernames(usernames) {
 
 function format_fetch_errors(failed_results) {
     return failed_results.map(result => result.error.message).join("\n")
+}
+
+// Short reason for a failed lookup, e.g. "not found on ddnet.org (...)"
+function describe_fetch_error(err) {
+    return (err && err.summary) || (err && err.message) || "could not be loaded"
 }

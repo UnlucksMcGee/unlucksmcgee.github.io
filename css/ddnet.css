@@ -7,10 +7,166 @@
     display: none !important;
 }
 
+/* Region ("global" / "country", set on <body data-region>): a country adds "+ Add from a server" */
+[data-region="global"] .country_only {
+    display: none !important;
+}
+
+[hidden] {
+    display: none !important;
+}
+
 /* Rankings use one player: show only the first box, without its remove button */
 [data-mode="rank"] #textinputs .textdiv:not(:first-child),
 [data-mode="rank"] #textinputs .btn_remove {
     display: none;
+}
+
+/* ---------- Region chip and menu (header, right side) ---------- */
+
+/* Keep the centred title clear of Home (left) and the chip (right, up to 11rem wide) */
+header nav:has(.region_picker) {
+    padding: 0 12.5rem;
+}
+
+.region_picker {
+    position: absolute;
+    right: 1rem;
+}
+
+.region_chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    max-width: 11rem;
+    padding: 0.4rem 0.8rem;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 999px;
+    background: transparent;
+    color: #fff;
+    font-size: 0.875rem;
+    line-height: 1.2;
+    cursor: pointer;
+    transition: background-color 0.15s;
+}
+
+.region_chip > span:first-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.region_chip:hover,
+.region_chip[aria-expanded="true"] {
+    background-color: rgba(255, 255, 255, 0.12);
+}
+
+.region_chip:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.4);
+}
+
+.region_caret {
+    font-size: 0.7rem;
+    opacity: 0.8;
+}
+
+.region_menu {
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    right: 0;
+    width: 16rem;
+    max-height: min(26rem, 70vh);
+    overflow-y: auto;
+    padding: 0.35rem;
+    background-color: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: 0 12px 32px rgba(16, 24, 40, 0.2);
+    color: var(--text);
+}
+
+.region_menu_hint,
+.region_menu_status {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.region_menu ul {
+    list-style: none;
+}
+
+.region_option {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 0.45rem 0.6rem;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text);
+    font-size: 0.9rem;
+    text-align: left;
+    cursor: pointer;
+}
+
+.region_option:hover {
+    background-color: var(--accent-soft);
+}
+
+.region_option:focus-visible {
+    outline: none;
+    box-shadow: var(--focus);
+}
+
+.region_option[aria-pressed="true"] {
+    background-color: var(--accent);
+    color: var(--on-accent);
+    font-weight: 600;
+}
+
+.region_option_detail {
+    flex: none;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.region_option[aria-pressed="true"] .region_option_detail {
+    color: inherit;
+    opacity: 0.85;
+}
+
+/* Phones: no room to centre the title between Home and the chip, so lay the header out in a row */
+@media (max-width: 600px) {
+    header nav:has(.region_picker) {
+        justify-content: space-between;
+        gap: 0.5rem;
+        padding: 0 0.75rem;
+    }
+
+    header nav:has(.region_picker) a.nav_home,
+    .region_picker {
+        position: static;
+        flex: none;
+    }
+
+    header nav:has(.region_picker) h1 {
+        flex: 1;
+        font-size: 0.95rem;
+        text-align: center;
+    }
+
+    .nav_home_text {
+        display: none;
+    }
+
+    .region_chip {
+        max-width: 8.5rem;
+    }
 }
 
 .mode_switch {
@@ -213,37 +369,27 @@ select:focus {
     margin-top: 0.75rem;
 }
 
-.search_actions .btn_ghost {
-    align-self: flex-start;
+.add_actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 0.5rem;
 }
 
-/* ---------- "Load names from server" ---------- */
-
-.server_loader {
-    margin-bottom: 1.25rem;
-    padding-bottom: 1.25rem;
-    border-bottom: 1px solid var(--border);
+.add_actions .btn_ghost[aria-expanded="true"] {
+    background-color: var(--accent-soft);
 }
 
-.toggle {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.9rem;
-    font-weight: 600;
-    cursor: pointer;
-    user-select: none;
+/* ---------- "+ Add from a server" panel ---------- */
+
+.server_panel {
+    padding: 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background-color: var(--surface-muted);
 }
 
-.toggle input {
-    width: 1rem;
-    height: 1rem;
-    accent-color: var(--accent);
-    cursor: pointer;
-}
-
-#server_names_div {
-    margin-top: 0.75rem;
+.server_panel .field_note {
+    margin: 0 0 0.5rem;
 }
 
 .server_row {
@@ -254,6 +400,51 @@ select:focus {
 
 .server_row select {
     flex: 1;
+}
+
+/* ---------- Search notice and flagged names ---------- */
+
+.notice {
+    width: 100%;
+    max-width: 30rem;
+    margin: 1rem auto 0;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border);
+    border-left-width: 4px;
+    border-radius: var(--radius-sm);
+    background-color: var(--surface);
+    font-size: 0.875rem;
+}
+
+.notice_warning {
+    border-left-color: #d97706;
+}
+
+.notice_error {
+    border-left-color: var(--danger);
+}
+
+.notice ul {
+    margin: 0.4rem 0 0;
+    padding-left: 1.1rem;
+    list-style: disc;
+    color: var(--text-muted);
+    overflow-wrap: anywhere;
+}
+
+.notice ul strong {
+    color: var(--text);
+}
+
+.notice .btn {
+    margin-top: 0.6rem;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.85rem;
+}
+
+input[type="text"].input_error {
+    border-color: var(--danger);
+    background-color: var(--danger-soft);
 }
 
 /* ---------- Results ---------- */

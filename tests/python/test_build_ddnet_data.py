@@ -33,7 +33,7 @@ TS = "2025-01-01 00:00:00"
 def make_dump(path: Path) -> None:
     con = sqlite3.connect(path)
     con.executescript(SCHEMA)
-    maps = ["Odd", "Even", "Empty", "#weird 'name\""] + [f"Zaf{i}" for i in range(1, 12)]
+    maps = ["Odd", "Even", "Empty", "#weird 'name\""]
     con.executemany(
         "INSERT INTO maps VALUES (?, 'Novice', 1, 1, 'mapper', ?)", [(m, TS) for m in maps]
     )
@@ -49,14 +49,6 @@ def make_dump(path: Path) -> None:
         ("Even", "p2", 20.0, "2025-03-01 03:27:32", "GER"),  # latest finish in the dump
         ("#weird 'name\"", "p1", 5.0, TS, "GER"),
     ]
-    # zaf11 finishes 11 distinct maps on ZAF (included); zaf10 finishes 10 distinct maps
-    # many times each (excluded: repeats don't count); zafmix finishes 11 maps but only
-    # 10 of them on ZAF (excluded)
-    zaf_maps = [f"Zaf{i}" for i in range(1, 12)]
-    race += [(m, "zaf11", 100.0, TS, "ZAF") for m in zaf_maps]
-    race += [(m, "zaf10", 100.0, TS, "ZAF") for m in zaf_maps[:10] for _ in range(3)]
-    race += [(m, "zafmix", 100.0, TS, "ZAF") for m in zaf_maps[:10]]
-    race += [(zaf_maps[10], "zafmix", 100.0, TS, "GER")]
     con.executemany("INSERT INTO race VALUES (?, ?, ?, ?, ?)", race)
     con.executemany(
         "INSERT INTO teamrace VALUES (?, ?, ?, ?, ?)",
@@ -72,7 +64,7 @@ class BuildTest(unittest.TestCase):
         cls.tmp = tempfile.TemporaryDirectory()
         cls.db = Path(cls.tmp.name) / "ddnet.sqlite"
         make_dump(cls.db)
-        cls.map_data, cls.zaf, cls.updated = b.build(cls.db, None)
+        cls.map_data, cls.updated =b.build(cls.db, None)
 
     @classmethod
     def tearDownClass(cls):
@@ -92,10 +84,7 @@ class BuildTest(unittest.TestCase):
         self.assertEqual(self.map_data["Empty"], {"median_time": None, "top_time": None})
 
     def test_every_map_in_maps_table_is_present(self):
-        self.assertEqual(len(self.map_data), 15)
-
-    def test_zaf_players_count_distinct_maps_on_zaf(self):
-        self.assertEqual(self.zaf, ["zaf11"])
+        self.assertEqual(len(self.map_data), 4)
 
     def test_updated_date_is_latest_finish(self):
         self.assertEqual(self.updated, dt.date(2025, 3, 1))
@@ -103,39 +92,35 @@ class BuildTest(unittest.TestCase):
 
     def test_output_round_trips_and_escapes_names(self):
         with tempfile.TemporaryDirectory() as out:
-            b.write_outputs(Path(out), self.map_data, self.zaf, self.updated)
+            b.write_outputs(Path(out), self.map_data, self.updated)
             map_js = (Path(out) / "map_data.js").read_text(encoding="utf-8")
             self.assertTrue(map_js.startswith('const map_data_last_updated = "1 March 2025";\n'))
-            self.assertEqual(b.read_previous(Path(out)), (self.map_data, self.zaf, self.updated))
+            self.assertEqual(b.read_previous(Path(out)), (self.map_data, self.updated))
 
 
 class SanityTest(unittest.TestCase):
     def setUp(self):
         self.maps = {f"m{i}": {"median_time": 1.0, "top_time": 1.0} for i in range(200)}
-        self.zaf = [f"p{i}" for i in range(100)]
         self.date = dt.date(2026, 11, 1)
-        self.previous = (self.maps, self.zaf, self.date)
+        self.previous = (self.maps, self.date)
 
     def test_identical_data_passes(self):
-        self.assertEqual(b.check_sanity(self.previous, self.maps, self.zaf, self.date), [])
+        self.assertEqual(b.check_sanity(self.previous, self.maps,self.date), [])
 
     def test_older_dump_fails(self):
-        problems = b.check_sanity(self.previous, self.maps, self.zaf, dt.date(2026, 10, 1))
+        problems = b.check_sanity(self.previous, self.maps,dt.date(2026, 10, 1))
         self.assertIn("older", problems[0])
 
     def test_small_map_drop_passes_large_drop_fails(self):
         few_removed = dict(list(self.maps.items())[:197])
-        self.assertEqual(b.check_sanity(self.previous, few_removed, self.zaf, self.date), [])
+        self.assertEqual(b.check_sanity(self.previous, few_removed,self.date), [])
         many_removed = dict(list(self.maps.items())[:150])
-        self.assertIn("map count", b.check_sanity(self.previous, many_removed, self.zaf, self.date)[0])
+        self.assertIn("map count", b.check_sanity(self.previous, many_removed,self.date)[0])
 
     def test_many_maps_losing_times_fails(self):
         broken = {k: ({"median_time": None, "top_time": None} if i < 10 else v)
                   for i, (k, v) in enumerate(self.maps.items())}
-        self.assertIn("no times", b.check_sanity(self.previous, broken, self.zaf, self.date)[0])
-
-    def test_zaf_drop_fails(self):
-        self.assertIn("ZAF", b.check_sanity(self.previous, self.maps, self.zaf[:50], self.date)[0])
+        self.assertIn("no times", b.check_sanity(self.previous, broken,self.date)[0])
 
 
 class CommandLineTest(unittest.TestCase):
@@ -153,7 +138,6 @@ class CommandLineTest(unittest.TestCase):
                           'const map_data = ' + json.dumps({f"m{i}": {"median_time": 1, "top_time": 1}
                                                             for i in range(1000)}) + ';\n')
             (out / "map_data.js").write_text(old_map_js, encoding="utf-8")
-            (out / "zaf_players.js").write_text('var zaf_players = ["zaf11"];\n', encoding="utf-8")
 
             result = self.run_script(str(tmp / "ddnet.sqlite"), "-o", str(out))
             self.assertEqual(result.returncode, 1, result.stderr)

@@ -11,17 +11,21 @@
     <meta property="og:title" content="DDNet Map Finder" />
     <meta property="og:description" content="Find DDNet maps to play next: unfinished maps in common between players, or the maps where your times rank lowest." />
     <meta property="og:image" content="https://unlucksmcgee.github.io/images/ddnet_preview.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="DDNet Map Finder showing the unfinished maps NovaShock and ryu have in common" />
     <meta property="og:site_name" content="UnlucksMcGee" />
     <meta property="og:locale" content="en_US" />
-    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="DDNet Map Finder" />
     <meta name="twitter:description" content="Find DDNet maps to play next: unfinished maps in common between players, or the maps where your times rank lowest." />
     <meta name="twitter:image" content="https://unlucksmcgee.github.io/images/ddnet_preview.png" />
     <title>DDNet Map Finder - UnlucksMcGee</title>
+    <!-- player data and name suggestions come from ddnet.org: open the connection early -->
+    <link rel="preconnect" href="https://ddnet.org" crossorigin />
     <link href="css/main.css" rel="stylesheet" />
     <link href="css/ddnet.css" rel="stylesheet" />
     <link href="css/autocomplete.css" rel="stylesheet" />
-    <script src="js/zaf_players.js"></script>
     <script src="js/autocomplete.js"></script>
     <script src="js/map_data.js"></script>
     <script src="js/ddnet_common.js"></script>
@@ -36,14 +40,25 @@
     </script>
 </head>
 
-<body>
+<body data-region="global">
     <header>
         <nav>
-            <a href="/" class="nav_home">&larr; Home</a>
+            <a href="/" class="nav_home">&larr;<span class="nav_home_text"> Home</span></a>
             <h1>DDNet Map Finder</h1>
+            <!-- Region: "Global", or a country with DDNet servers (adds "+ Add from a server") -->
+            <div class="region_picker" id="region_picker">
+                <button type="button" class="region_chip" id="region_button" aria-expanded="false" aria-controls="region_menu" onclick="toggle_region_menu()">
+                    <span id="region_button_label">Global</span><span class="region_caret" aria-hidden="true">&#x25BE;</span>
+                </button>
+                <div class="region_menu" id="region_menu" hidden>
+                    <p class="region_menu_hint">Pick a country to add players from its servers.</p>
+                    <ul id="region_menu_list" role="list"></ul>
+                </div>
+            </div>
         </nav>
     </header>
-    <!-- data-mode is "unfinished" or "rank"; elements with .unfinished_only / .rank_only only show in that mode -->
+    <!-- data-mode is "unfinished" or "rank"; elements with .unfinished_only / .rank_only only show in that mode.
+         <body data-region> is "global" or "country" (a country is picked, e.g. ?region=za); .country_only elements only show then. -->
     <main id="ddnet_main" data-mode="unfinished">
         <div class="mode_switch" role="tablist" aria-label="Mode">
             <button type="button" role="tab" id="mode_tab_unfinished" aria-selected="true" onclick="set_mode('unfinished')">Unfinished maps</button>
@@ -58,22 +73,6 @@
         </div>
 
         <div class="card search_card">
-            <div class="server_loader unfinished_only">
-                <label class="toggle">
-                    <input type="checkbox" id="show_hide_usernames" onclick="document.getElementById('server_names_div').style.display = this.checked ? 'block' : 'none'; if (this.checked) {loadServerNames()};">
-                    Load names from a server
-                </label>
-                <div id="server_names_div" style="display: none;">
-                    <div class="server_row">
-                        <select id="server_selection_dropdown" aria-label="Server">
-                            <option selected value="none">Loading...</option>
-                        </select>
-                        <button id="server_names_refresh_button" class="btn btn_icon" title="Refresh server list" aria-label="Refresh server list" disabled onclick="loadServerNames()">&#x27F3;</button>
-                    </div>
-                    <button class="btn btn_secondary btn_block" onclick="loadNamesFromSelectedServer()">Use players from this server</button>
-                </div>
-            </div>
-
             <p class="field_label"><span class="unfinished_only">Players</span><span class="rank_only">Player</span> <span class="field_hint">(names are case-sensitive)</span></p>
             <div id="textinputs">
                 <div class="textdiv">
@@ -83,11 +82,30 @@
                     <input type="text" class="username_text_input" value="Eyesore" aria-label="Player name"><button class="btn btn_icon btn_remove" title="Remove player" aria-label="Remove player" onclick="remove_player_row(this)">&times;</button>
                 </div>
             </div>
-            <p class="field_note rank_only" id="rank_extra_players_note">Rankings use the first player only.</p>
             <div class="search_actions">
-                <button class="btn btn_ghost unfinished_only" onclick="add_textbox(true)">+ Add player</button>
+                <div class="add_actions unfinished_only">
+                    <button class="btn btn_ghost" onclick="add_textbox(true)">+ Add player</button>
+                    <button class="btn btn_ghost country_only" id="server_loader_toggle" aria-expanded="false" aria-controls="server_names_div" onclick="toggle_server_loader()">+ Add from a server</button>
+                </div>
+                <div id="server_names_div" class="server_panel unfinished_only country_only" hidden>
+                    <p class="field_note" id="server_panel_title">Players on a server</p>
+                    <div class="server_row">
+                        <select id="server_selection_dropdown" aria-label="Server">
+                            <option selected value="none">Loading...</option>
+                        </select>
+                        <button id="server_names_refresh_button" class="btn btn_icon" title="Refresh server list" aria-label="Refresh server list" disabled onclick="loadServerNames()">&#x27F3;</button>
+                    </div>
+                    <button class="btn btn_secondary btn_block" onclick="loadNamesFromSelectedServer()">Use players from this server</button>
+                </div>
                 <button id="search_button" class="btn btn_primary btn_block" onclick="search()">Search</button>
             </div>
+        </div>
+
+        <!-- Problems with the last search: players that were skipped, or why nothing could be shown -->
+        <div id="search_notice" class="notice" role="status" hidden>
+            <p id="search_notice_text"></p>
+            <ul id="search_notice_list" role="list"></ul>
+            <button type="button" class="btn btn_secondary" id="remove_skipped_button" onclick="remove_skipped_players()" hidden>Remove skipped players</button>
         </div>
 
         <div id="results_section_div" style="display: none;">
@@ -137,11 +155,25 @@
         "rank": { "default_sort": "sorting_percentile" },
     }
 
+    const main_element = document.getElementById("ddnet_main")
+
+    // Names are suggested by ddnet.org's player search as you type
+    const player_name_source = search_ddnet_players
+
     for (const textinput_element of document.getElementsByClassName("username_text_input")) {
-        autocomplete(textinput_element, zaf_players);
+        autocomplete(textinput_element, player_name_source);
     }
 
-    const main_element = document.getElementById("ddnet_main")
+    // A name flagged by the last search stops being flagged as soon as it's edited
+    document.getElementById("textinputs").addEventListener("input", event => {
+        if (event.target.classList.contains("input_error")) {
+            clear_input_error(event.target)
+        }
+    })
+
+    // "global", or a two-letter country code (lowercase, as in the master list's "af:za")
+    let current_region = "global"
+
     const textinputs_div = document.getElementById("textinputs")
     const results_section_div = document.getElementById("results_section_div")
     const map_results_div = document.getElementById("map_results_div")
@@ -186,11 +218,11 @@
         }
         map_results_div.classList.toggle("wide_tables", mode === "rank")
         select_sorting_radio(MODES[mode]["default_sort"])
-        update_extra_players_note()
 
         if (changed) {
             latest_search_id++ // ignore any search still loading
             search_button.disabled = false
+            clear_search_notice()
             results_section_div.style.display = "none"
             clear_element(map_results_div)
             clear_element(player_results_div)
@@ -219,11 +251,6 @@
         return [...document.getElementsByClassName("username_text_input")].map(input => input.value)
     }
 
-    // Rankings mode only shows the first box; say so when the others hold names
-    function update_extra_players_note() {
-        document.getElementById("rank_extra_players_note").style.display = (get_num_textboxes() > 1) ? "" : "none"
-    }
-
     // Removes a player row, but always keeps at least one box (the last one is just cleared)
     function remove_player_row(button) {
         const row = button.closest(".textdiv")
@@ -232,7 +259,6 @@
         } else {
             row.remove()
         }
-        update_extra_players_note()
     }
 
     // Returns false if the 64-player cap was reached. focus: move the cursor into the new box
@@ -263,8 +289,7 @@
         new_div.appendChild(new_delete_button)
         textinputs_div.appendChild(new_div)
 
-        autocomplete(new_input, zaf_players);
-        update_extra_players_note()
+        autocomplete(new_input, player_name_source);
         if (focus) {
             new_input.focus()
         }
@@ -277,7 +302,6 @@
             return
         }
         textdivs[textdivs.length - 1].remove()
-        update_extra_players_note()
     }
 
     // Resize the textbox list to fit the names (capped at 64) and fill them in
@@ -310,6 +334,150 @@
     }
     loadUsernamesFromStorage()
     set_mode(get_mode_from_url())
+    set_region(get_region_from_url() || load_saved_region(), false)
+
+    // ---------- Region (header chip) ----------
+
+    function get_region_from_url() {
+        const region = (new URLSearchParams(window.location.search).get("region") || "").toLowerCase()
+        return (region === "global" || is_country_code(region)) ? region : null
+    }
+
+    // Picks "global" or a country, kept in the URL (?region=za) and, when save is true (picked from
+    // the menu), in localStorage. A country adds "+ Add from a server" (its servers only).
+    function set_region(region, save = true) {
+        if (!is_country_code(region)) {
+            region = "global"
+        }
+        const changed = region !== current_region
+        current_region = region
+        document.body.setAttribute("data-region", region === "global" ? "global" : "country")
+        const label = region === "global" ? "Global" : country_name(region)
+        document.getElementById("region_button_label").textContent = label
+        document.getElementById("region_button").title = "Region: " + label
+        document.getElementById("server_panel_title").textContent = region === "global" ? "" : "Players on a server in " + label
+        if (save) {
+            save_region(region)
+        }
+        if (changed) {
+            close_server_loader()
+        }
+
+        const url = new URL(window.location.href)
+        if (region === "global") {
+            url.searchParams.delete("region")
+        } else {
+            url.searchParams.set("region", region)
+        }
+        try {
+            window.history.replaceState(null, "", url)
+        } catch (err) {
+            // e.g. file:// pages
+        }
+    }
+
+    // The master list is fetched when the menu opens, and again if it's reopened after 2 minutes
+    const REGION_COUNTRIES_MAX_AGE_MS = 2 * 60 * 1000
+    let region_countries_promise = null
+    let region_countries_time = 0
+
+    function toggle_region_menu(force_open) {
+        const menu = document.getElementById("region_menu")
+        const open = (force_open === undefined) ? menu.hidden : force_open
+        if (open === !menu.hidden) {
+            return
+        }
+        menu.hidden = !open
+        document.getElementById("region_button").setAttribute("aria-expanded", String(open))
+        if (!open) {
+            return
+        }
+        render_region_menu(null)
+        if (region_countries_promise === null || Date.now() - region_countries_time > REGION_COUNTRIES_MAX_AGE_MS) {
+            const promise = fetch_ddnet_servers().then(summarise_server_countries)
+            region_countries_promise = promise
+            region_countries_time = Date.now()
+            promise.catch(() => {
+                if (region_countries_promise === promise) region_countries_promise = null // try again next time
+            })
+        }
+        region_countries_promise
+            .then(countries => { if (!menu.hidden) render_region_menu(countries) })
+            .catch(() => { if (!menu.hidden) render_region_menu([], true) })
+    }
+
+    // countries: null while loading, else [{code, servers, online}]
+    function render_region_menu(countries, failed = false) {
+        const list = document.getElementById("region_menu_list")
+        const items = [region_menu_item("global", "Global", null)]
+        const codes = countries ? countries.map(country => country["code"]) : []
+        if (current_region !== "global" && !codes.includes(current_region)) {
+            // keep the chosen country listed even if it has no servers right now
+            items.push(region_menu_item(current_region, country_name(current_region), countries && !failed ? "no servers right now" : null))
+        }
+        for (const country of countries || []) {
+            items.push(region_menu_item(country["code"], country_name(country["code"]), country["online"] + " online"))
+        }
+        if (countries === null || failed) {
+            const status = document.createElement("li")
+            status.className = "region_menu_status"
+            status.textContent = failed ? "Could not load the server list" : "Loading countries\u2026"
+            items.push(status)
+        }
+        const focused = list.contains(document.activeElement) ? document.activeElement.getAttribute("data-region") : null
+        list.replaceChildren(...items)
+        if (focused) {
+            const again = list.querySelector('.region_option[data-region="' + focused + '"]')
+            if (again) again.focus()
+        }
+    }
+
+    function region_menu_item(code, name, detail) {
+        const item = document.createElement("li")
+        const button = document.createElement("button")
+        button.type = "button"
+        button.className = "region_option"
+        button.setAttribute("data-region", code)
+        button.setAttribute("aria-pressed", String(code === current_region))
+        const name_span = document.createElement("span")
+        name_span.textContent = name
+        button.appendChild(name_span)
+        if (detail) {
+            const detail_span = document.createElement("span")
+            detail_span.className = "region_option_detail"
+            detail_span.textContent = detail
+            button.appendChild(detail_span)
+        }
+        button.addEventListener("click", () => {
+            set_region(code)
+            toggle_region_menu(false)
+            document.getElementById("region_button").focus()
+        })
+        item.appendChild(button)
+        return item
+    }
+
+    // Close the menu on outside clicks and Escape
+    document.addEventListener("click", event => {
+        if (!document.getElementById("region_picker").contains(event.target)) {
+            toggle_region_menu(false)
+        }
+    })
+    document.addEventListener("keydown", event => {
+        if (event.key === "Escape" && !document.getElementById("region_menu").hidden) {
+            const picker = document.getElementById("region_picker")
+            const focus_was_inside = picker.contains(document.activeElement)
+            toggle_region_menu(false)
+            if (focus_was_inside) {
+                document.getElementById("region_button").focus()
+            }
+        }
+    })
+    document.getElementById("region_picker").addEventListener("focusout", event => {
+        if (event.relatedTarget && !document.getElementById("region_picker").contains(event.relatedTarget)) {
+            toggle_region_menu(false)
+        }
+    })
 
     // ---------- Unfinished-maps mode ----------
 
@@ -388,19 +556,20 @@
     // ---------- Search (both modes) ----------
 
     function search() {
-        const new_usernames = get_entered_usernames()
-        if (current_mode === "rank") {
-            if (new_usernames[0] == "") {
-                window.alert("Please fill in the player name")
-                return
-            }
-        } else if (new_usernames.includes("")) {
-            window.alert("Please fill in all the textboxes (or remove unused ones)")
+        clear_search_notice()
+        const entered_usernames = get_entered_usernames()
+        // Empty boxes are skipped; rankings use the first box
+        const new_usernames = (current_mode === "rank")
+            ? entered_usernames.slice(0, 1).filter(name => name.trim() !== "")
+            : entered_usernames.filter(name => name.trim() !== "")
+        if (new_usernames.length == 0) {
+            results_section_div.style.display = "none"
+            show_search_notice("error", current_mode === "rank" ? "Enter a player name to search." : "Enter at least one player name to search.")
             return
         }
 
         // Save the whole list for next load, also in rankings mode, so switching modes keeps it
-        save_usernames(new_usernames)
+        save_usernames(entered_usernames.filter(name => name.trim() !== ""))
 
         results_section_div.style.display = "block"
         show_loading_spinner(map_results_div)
@@ -433,10 +602,18 @@
             return // a newer search was started, or the mode changed
         }
 
-        const failed_results = results.filter(result => result.error)
+        // Players that couldn't be loaded are skipped (and flagged); the search goes on with the rest
+        const failed_results = unique_by_username(results.filter(result => result.error))
+        const loaded_results = results.filter(result => !result.error)
         if (failed_results.length > 0) {
+            mark_failed_inputs(failed_results)
+            const message = (loaded_results.length == 0)
+                ? "None of the players could be loaded:"
+                : "Skipped " + failed_results.length + " of " + unique_by_username(results).length + " players, showing results for the rest:"
+            show_search_notice(loaded_results.length == 0 ? "error" : "warning", message, failed_results)
+        }
+        if (loaded_results.length == 0) {
             results_section_div.style.display = "none"
-            window.alert("Could not load " + failed_results.length + " of " + results.length + " players:\n\n" + format_fetch_errors(failed_results))
             return
         }
 
@@ -444,12 +621,12 @@
             const new_details_dict = {}
             const new_player_points = {}
             const per_player_unfinished = []
-            for (const result of results) {
+            for (const result of loaded_results) {
                 new_player_points[result.username] = get_player_points(result.json)
                 per_player_unfinished.push(collect_unfinished_maps(result.json, new_details_dict))
             }
 
-            usernames_list = new_usernames
+            usernames_list = [...new Set(loaded_results.map(result => result.username))]
             player_points = new_player_points
             unfinished_map_details_dict = new_details_dict
             common_unfinished_maps_dict = intersect_unfinished_maps(per_player_unfinished)
@@ -457,7 +634,7 @@
         } catch (err) {
             console.log(err)
             results_section_div.style.display = "none"
-            window.alert("Error processing player data: " + err.message)
+            show_search_notice("error", "Error processing player data: " + err.message)
         }
     }
 
@@ -469,7 +646,9 @@
             if (search_id == latest_search_id) {
                 console.log(err)
                 results_section_div.style.display = "none"
-                window.alert(err.message)
+                const result = { "username": username, "json": null, "error": err }
+                mark_failed_inputs([result])
+                show_search_notice("error", "Could not load the player:", [result], false)
             }
             return
         }
@@ -487,8 +666,68 @@
         } catch (err) {
             console.log(err)
             results_section_div.style.display = "none"
-            window.alert("Error processing player data: " + err.message)
+            show_search_notice("error", "Error processing player data: " + err.message)
         }
+    }
+
+    // ---------- Search notice and flagged names ----------
+
+    function unique_by_username(results) {
+        const seen = new Set()
+        return results.filter(result => !seen.has(result.username) && seen.add(result.username))
+    }
+
+    // kind: "warning" (some players skipped) or "error" (nothing to show).
+    // failed_results: [{username, error}] listed under the message; can_remove shows "Remove skipped players".
+    function show_search_notice(kind, message, failed_results = [], can_remove = true) {
+        const notice = document.getElementById("search_notice")
+        notice.className = "notice notice_" + kind
+        document.getElementById("search_notice_text").textContent = message
+        const items = failed_results.map(result => {
+            const item = document.createElement("li")
+            const name = document.createElement("strong")
+            name.textContent = result.username
+            item.appendChild(name)
+            item.appendChild(document.createTextNode(": " + describe_fetch_error(result.error)))
+            return item
+        })
+        document.getElementById("search_notice_list").replaceChildren(...items)
+        document.getElementById("remove_skipped_button").hidden = !(can_remove && failed_results.length > 0)
+        notice.hidden = false
+    }
+
+    function clear_search_notice() {
+        document.getElementById("search_notice").hidden = true
+        for (const input of document.querySelectorAll("#textinputs .input_error")) {
+            clear_input_error(input)
+        }
+    }
+
+    function mark_failed_inputs(failed_results) {
+        const reasons = new Map(failed_results.map(result => [result.username, describe_fetch_error(result.error)]))
+        for (const input of document.getElementsByClassName("username_text_input")) {
+            if (reasons.has(input.value)) {
+                input.classList.add("input_error")
+                input.setAttribute("aria-invalid", "true")
+                input.title = reasons.get(input.value)
+            }
+        }
+    }
+
+    function clear_input_error(input) {
+        input.classList.remove("input_error")
+        input.removeAttribute("aria-invalid")
+        input.removeAttribute("title")
+    }
+
+    // Removes the rows flagged by the last search (keeps one empty box if that was all of them)
+    function remove_skipped_players() {
+        for (const input of [...document.querySelectorAll("#textinputs .input_error")]) {
+            clear_input_error(input)
+            remove_player_row(input)
+        }
+        document.getElementById("search_notice").hidden = true
+        save_usernames(get_entered_usernames().filter(name => name.trim() !== ""))
     }
 
     // ---------- Results (both modes) ----------
@@ -552,7 +791,23 @@
         }
     }
 
-    // ---------- Load names from a server (unfinished-maps mode) ----------
+    // ---------- Add players from a server (a country is picked, unfinished-maps mode) ----------
+
+    function toggle_server_loader() {
+        const panel = document.getElementById("server_names_div")
+        if (panel.hidden) {
+            panel.hidden = false
+            document.getElementById("server_loader_toggle").setAttribute("aria-expanded", "true")
+            loadServerNames()
+        } else {
+            close_server_loader()
+        }
+    }
+
+    function close_server_loader() {
+        document.getElementById("server_names_div").hidden = true
+        document.getElementById("server_loader_toggle").setAttribute("aria-expanded", "false")
+    }
 
     function set_server_dropdown_placeholder(server_selection_dropdown, text) {
         const option = document.createElement("option")
@@ -562,37 +817,29 @@
         server_selection_dropdown.replaceChildren(option)
     }
 
+    let server_load_id = 0
+
     function loadServerNames() {
-        // Load servers and usernames from https://master1.ddnet.org/ddnet/15/servers.json
-        // Filter servers by location (only show servers with location "af:za")
-        // Filter servers by game_type (only show servers with game_type "DDraceNetwork")
-        // Filter servers by number of clients (only show servers with more than 0 clients)
-        // Fill dropdown box with server names (with some players names in brackets)
+        // Fills the dropdown with the chosen country's DDraceNetwork servers that have players
+        // (server name, player count and the first few names), from the master server list.
         // Server and player names are set by anyone, so only ever use textContent here.
         const server_selection_dropdown = document.getElementById("server_selection_dropdown")
         const refresh_button = document.getElementById("server_names_refresh_button")
         set_server_dropdown_placeholder(server_selection_dropdown, "Loading")
         const MAX_PLAYER_DISPLAY_COUNT = 5;
         refresh_button.disabled = true
-        fetch("https://master1.ddnet.org/ddnet/15/servers.json")
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error("HTTP " + response.status)
+        const region = current_region
+        const load_id = ++server_load_id
+        fetch_ddnet_servers()
+            .then(servers => {
+                if (load_id !== server_load_id) {
+                    return // a newer load (or another country) took over
                 }
-                return response.json()
-            })
-            .then(data => {
                 set_server_dropdown_placeholder(server_selection_dropdown, "Select server")
-                for (const server of data["servers"] || []) {
+                for (const server of servers) {
                     const info = server["info"] || {}
-                    const clients = Array.isArray(info["clients"]) ? info["clients"] : []
-                    if (server["location"] != "af:za") {
-                        continue
-                    }
-                    if (info["game_type"] != "DDraceNetwork") {
-                        continue
-                    }
-                    if (clients.length == 0) {
+                    const clients = server_clients(server)
+                    if (server_country(server) !== region || !is_ddrace_server(server) || clients.length == 0) {
                         continue
                     }
                     const player_names = clients.map(player => String(player["name"]))
@@ -605,9 +852,15 @@
                     new_option.textContent = option_text
                     server_selection_dropdown.appendChild(new_option)
                 }
+                if (server_selection_dropdown.options.length == 1) {
+                    set_server_dropdown_placeholder(server_selection_dropdown, "No players online in " + country_name(region) + " right now")
+                }
                 refresh_button.disabled = false
             })
             .catch(error => {
+                if (load_id !== server_load_id) {
+                    return
+                }
                 console.error('Error:', error);
                 set_server_dropdown_placeholder(server_selection_dropdown, "Could not load servers (" + error.message + ")")
                 refresh_button.disabled = false

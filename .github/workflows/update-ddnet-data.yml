@@ -63,8 +63,8 @@ jobs:
       - name: Commit and push if changed
         run: |
           rm -f "$WORK/ddnet.sqlite"
-          git add js/map_data.js js/zaf_players.js
-          if git diff --cached --quiet -- js/map_data.js js/zaf_players.js; then
+          git add js/map_data.js
+          if git diff --cached --quiet -- js/map_data.js; then
             echo "No changes."
             exit 0
           fi

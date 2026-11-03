@@ -55,6 +55,13 @@ const servers_json = {
     ],
 }
 
+// What the mocked ddnet.org player search (?query=) can return
+const search_results = [
+    { name: "UnlucksMcGee", points: 5846 },
+    { name: XSS_PLAYER, points: 1 },
+    { name: "NoPoints", points: "?" },
+]
+
 const ok = body => Promise.resolve({ ok: true, status: 200, json: async () => body })
 
 // Mock for window.fetch. Every URL is logged; anything unexpected throws so a test can't silently hit the network.
@@ -63,6 +70,10 @@ function make_mock_fetch(log) {
         url = String(url)
         log.push(url)
         if (url.startsWith("https://master1.ddnet.org/")) return ok(servers_json)
+        if (url.startsWith("https://ddnet.org/players/?query=")) {
+            const query = decodeURIComponent(url.split("?query=")[1]).toLowerCase()
+            return ok(search_results.filter(result => result.name.toLowerCase().includes(query)))
+        }
         if (!url.startsWith("https://ddnet.org/players/?json2=")) return Promise.reject(new Error("unexpected fetch in test: " + url))
         const name = decodeURIComponent(url.split("?json2=")[1])
         if (name == "NetFail") return Promise.reject(new TypeError("Failed to fetch"))
@@ -81,7 +92,7 @@ function silent_console(window_errors) {
 
 // Loads a page (query e.g. "?mode=rank" is added to its URL) with its local js/ scripts inlined (js/map_data.js replaced by the stand-in, or dropped
 // when map_data is null) and the Google Analytics snippet removed.
-function load_page(file, { saved_usernames = null, map_data = STAND_IN_MAP_DATA, query = "" } = {}) {
+function load_page(file, { saved_usernames = null, saved_region = null, map_data = STAND_IN_MAP_DATA, query = "" } = {}) {
     let html = fs.readFileSync(path.join(REPO, file), "utf8")
     const scripts = []
     html = html.replace(/<script\b([^>]*)>([\s\S]*?)<\/script>/g, (all, attrs, body) => {
@@ -110,6 +121,7 @@ function load_page(file, { saved_usernames = null, map_data = STAND_IN_MAP_DATA,
     w.fetch = w.mock_fetch
     w.HTMLElement.prototype.scrollIntoView = function () {}
     if (saved_usernames) w.localStorage.setItem("usernames", JSON.stringify(saved_usernames))
+    if (saved_region) w.localStorage.setItem("ddnet_region", saved_region)
     for (const source of scripts) {
         const element = w.document.createElement("script")
         element.textContent = source
@@ -123,4 +135,4 @@ const tick = (ms = 20) => new Promise(resolve => setTimeout(resolve, ms))
 
 const cell_texts = rows => rows.map(tr => [...tr.children].map(td => td.textContent))
 
-module.exports = { REPO, STAND_IN_MAP_DATA, XSS_PLAYER, players, rank_player, load_page, tick, cell_texts }
+module.exports = { REPO, STAND_IN_MAP_DATA, XSS_PLAYER, players, search_results, rank_player, load_page, tick, cell_texts }

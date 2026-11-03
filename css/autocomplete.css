@@ -42,3 +42,30 @@
     background-color: var(--accent, DodgerBlue) !important;
     color: var(--on-accent, #ffffff);
 }
+
+/* Remote suggestions: name on the left, points on the right */
+.autocomplete-items div.autocomplete-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 0.75rem;
+}
+
+.autocomplete-name {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.autocomplete-points {
+    flex-shrink: 0;
+    color: var(--text-muted, #666);
+    font-size: 0.8rem;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.autocomplete-active .autocomplete-points {
+    /*stay readable on the accent background*/
+    color: inherit;
+    opacity: 0.85;
+}
