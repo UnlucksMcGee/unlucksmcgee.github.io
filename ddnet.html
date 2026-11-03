@@ -45,7 +45,8 @@
     <link href="css/autocomplete.css" rel="stylesheet" />
     <script src="js/zaf_players.js"></script>
     <script src="js/autocomplete.js"></script>
-    <script src="js/map_data_20240503.js"></script>
+    <script src="js/map_data.js"></script>
+    <script src="js/ddnet_common.js"></script>
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-J887VM1ELW"></script>
     <script>
@@ -110,7 +111,7 @@
                 <br>
                 <br>
                 <br>
-                <button class="hover_button button_cyan" onclick="search()">Search</button>
+                <button id="search_button" class="hover_button button_cyan" onclick="search()">Search</button>
             </div>
         </div>
         <br>
@@ -129,7 +130,7 @@
                     <label for="sorting_easiest">Sort by "easiest"</label>
                 </div>
                 <div>
-                    <input type="radio" id="sorting_name" name="sorting_list" value="name" checked onclick="display_results('sorting_name');">
+                    <input type="radio" id="sorting_name" name="sorting_list" value="name" onclick="display_results('sorting_name');">
                     <label for="sorting_name">Sort by name</label>
                 </div>
                 <div>
@@ -144,6 +145,7 @@
             <br>
             <div id="map_results_div"></div>
             <p id="map_data_last_updated_p">Map times last updated: </p>
+            <p>Median time is the median of each player's best time on the map, so it can differ from ddnet.org (which counts every finish).</p>
         </div>
     </main>
     <footer>
@@ -152,405 +154,250 @@
 </body>
 
 <script>
+    const MAX_PLAYERS = 64
+
     for (const textinput_element of document.getElementsByClassName("username_text_input")) {
         autocomplete(textinput_element, zaf_players);
     }
 
-    var textinputs_div = document.getElementById("textinputs")
-    var results_section_div = document.getElementById("results_section_div")
-    var map_results_div = document.getElementById("map_results_div")
-    var results_shortcut_links_div = document.getElementById("results_shortcut_links_div")
-    var results_sorting_buttons_div = document.getElementById("results_sorting_buttons_div")
-    var player_results_div = document.getElementById("player_results_div")
-    var common_unfinished_maps_dict = {}
-    var unfinished_map_details_dict = {} //first key is server type e.g. Novice, nested key is map name with details
-    var player_points = {}
-    var usernames_list = []
+    const textinputs_div = document.getElementById("textinputs")
+    const results_section_div = document.getElementById("results_section_div")
+    const map_results_div = document.getElementById("map_results_div")
+    const results_shortcut_links_div = document.getElementById("results_shortcut_links_div")
+    const results_sorting_buttons_div = document.getElementById("results_sorting_buttons_div")
+    const player_results_div = document.getElementById("player_results_div")
+    let common_unfinished_maps_dict = {} // key is server type e.g. Novice, value is Set of map names
+    let unfinished_map_details_dict = {} // first key is server type e.g. Novice, nested key is map name with details
+    let player_points = {}
+    let usernames_list = []
+    let latest_search_id = 0
 
-    let map_data_last_updated_p = document.getElementById("map_data_last_updated_p")
-    map_data_last_updated_p.innerHTML += map_data_last_updated
+    show_map_data_last_updated()
 
     function get_num_textboxes() {
-        let textdivs = document.getElementsByClassName("textdiv")
-        return textdivs.length
+        return document.getElementsByClassName("textdiv").length
     }
 
+    // Returns false if the 64-player cap was reached
     function add_textbox() {
-        number_of_textboxes = get_num_textboxes()
-        if (number_of_textboxes == 64) {
-            window.alert("Max 64 players allowed.")
-            return
+        if (get_num_textboxes() >= MAX_PLAYERS) {
+            window.alert("Max " + MAX_PLAYERS + " players allowed.")
+            return false
         }
 
-        let new_div = document.createElement("div")
-        new_div.setAttribute("class", "textdiv")
+        const new_div = document.createElement("div")
+        new_div.className = "textdiv"
 
-        let new_input = document.createElement("input", { "type": "text", })
-        new_input.setAttribute("type", "text")
-        new_input.setAttribute("class", "username_text_input")
+        const new_input = document.createElement("input")
+        new_input.type = "text"
+        new_input.className = "username_text_input"
 
-        let new_delete_button = document.createElement("button")
-        new_delete_button.setAttribute("class", "hover_button button_red")
-        new_delete_button.innerHTML = "X"
-        new_delete_button.onclick = function () {
-            this.parentElement.remove()
-        }
+        const new_delete_button = document.createElement("button")
+        new_delete_button.className = "hover_button button_red"
+        new_delete_button.textContent = "X"
+        new_delete_button.addEventListener("click", function () {
+            new_div.remove()
+        })
 
         new_div.appendChild(new_input)
         new_div.appendChild(new_delete_button)
         textinputs_div.appendChild(new_div)
 
         autocomplete(new_input, zaf_players);
+        return true
     }
 
     function remove_textbox() {
-        let number_of_textboxes = get_num_textboxes()
-
-        if (number_of_textboxes == 1) {
+        const textdivs = document.getElementsByClassName("textdiv")
+        if (textdivs.length <= 1) {
             return
         }
-
-        let textdivs = document.getElementsByClassName("textdiv")
         textdivs[textdivs.length - 1].remove()
+    }
+
+    // Resize the textbox list to fit the names (capped at 64) and fill them in
+    function fill_textboxes(names) {
+        names = names.slice(0, MAX_PLAYERS)
+        while (get_num_textboxes() > Math.max(names.length, 1)) {
+            remove_textbox()
+        }
+        while (get_num_textboxes() < names.length) {
+            if (!add_textbox()) {
+                break
+            }
+        }
+        const all_text_divs = document.getElementsByClassName("textdiv")
+        for (let index = 0; index < names.length && index < all_text_divs.length; index++) {
+            all_text_divs[index].getElementsByTagName("input")[0].value = names[index]
+        }
     }
 
     function loadUsernamesFromStorage() {
         // Load last used usernames on page load
-        usernames_list = JSON.parse(localStorage.getItem("usernames"));
-        if (!usernames_list) {
+        let saved_usernames = load_saved_usernames()
+        if (!saved_usernames) {
             return
         }
-        if (usernames_list.length == 0) {
-            usernames_list = ["UnlucksMcGee", "Eyesore"]
+        if (saved_usernames.length == 0) {
+            saved_usernames = ["UnlucksMcGee", "Eyesore"]
         }
-        let num_textboxes = get_num_textboxes();
-        let num_usernames = usernames_list.length
-        while (num_textboxes > num_usernames) {
-            remove_textbox()
-            num_textboxes = get_num_textboxes();
-        }
-        while (num_textboxes < num_usernames) {
-            add_textbox()
-            num_textboxes = get_num_textboxes();
-        }
-
-        // Fill textboxes with usernames
-
-        let all_text_divs = document.getElementsByClassName("textdiv")
-        for (let index = 0; index < usernames_list.length; index++) {
-            all_text_divs[index].getElementsByTagName("input")[0].value = usernames_list[index]
-        }
+        fill_textboxes(saved_usernames)
     }
     loadUsernamesFromStorage()
 
+    // Returns {type: Set(map names)} of maps unfinished by every player.
+    // A type only counts if every player has it; a map only if it's unfinished for all of them.
+    function intersect_unfinished_maps(per_player_unfinished) {
+        const common = {}
+        if (per_player_unfinished.length == 0) {
+            return common
+        }
+        for (const server_type in per_player_unfinished[0]) {
+            let common_maps = new Set(per_player_unfinished[0][server_type])
+            for (let index = 1; index < per_player_unfinished.length; index++) {
+                const other_maps = per_player_unfinished[index][server_type]
+                if (!other_maps) {
+                    common_maps = new Set()
+                    break
+                }
+                common_maps = new Set([...common_maps].filter(map_name => other_maps.has(map_name)))
+            }
+            common[server_type] = common_maps
+        }
+        return common
+    }
+
+    // Returns {unfinished: {type: Set(map names)}} and fills details_dict[type][map] = {points, total_finishes}
+    function collect_unfinished_maps(player_json, details_dict) {
+        const unfinished = {}
+        for (const server_type in player_json["types"]) {
+            const maps = (player_json["types"][server_type] || {})["maps"] || {}
+            unfinished[server_type] = new Set()
+            if (!(server_type in details_dict)) {
+                details_dict[server_type] = {}
+            }
+            for (const map_name in maps) {
+                const map_info = maps[map_name]
+                if (map_info["finishes"] == 0) {
+                    unfinished[server_type].add(map_name)
+                    details_dict[server_type][map_name] = {
+                        "total_finishes": map_info["total_finishes"],
+                        "points": map_info["points"]
+                    }
+                }
+            }
+        }
+        return unfinished
+    }
+
     function search() {
-        let num_textboxes = get_num_textboxes()
-
-        usernames_list = []
-
-        let all_text_divs = document.getElementsByClassName("textdiv")
-        for (let index = 0; index < num_textboxes; index++) {
-            let username = all_text_divs[index].getElementsByTagName("input")[0].value
+        const new_usernames = []
+        for (const text_div of document.getElementsByClassName("textdiv")) {
+            const username = text_div.getElementsByTagName("input")[0].value
             if (username == "") {
                 window.alert("Please fill in all the textboxes (or remove unused ones)")
                 return
             }
-            usernames_list.push(username)
+            new_usernames.push(username)
         }
 
         // Save usernames to local storage for next load
-        localStorage.setItem("usernames", JSON.stringify(usernames_list));
+        save_usernames(new_usernames)
 
         results_section_div.style.display = "block"
-
-        map_results_div.innerHTML = "<div class='loading-spinner'></div>"
-        results_shortcut_links_div.innerHTML = ""
-        player_results_div.innerHTML = "<div class='loading-spinner'></div>"
+        show_loading_spinner(map_results_div)
+        clear_element(results_shortcut_links_div)
+        show_loading_spinner(player_results_div)
         results_sorting_buttons_div.style.display = "none"
 
-        const get_all_players_json = async () => {
-            try {
-                let response = await Promise.all(usernames_list.map(username => fetch("https://ddnet.org/players/?json2=" + username)))
-                let response_json = await Promise.all(response.map(e => e.json()))
-
-                console.log("Processing...")
-                let all_players_json_list = response_json
-
-                unfinished_map_details_dict = {} //first key is server type e.g. Novice, nested key is map name with details
-                let player_unfinished_maps_dict = {} // first key is username, nested key is server type e.g. Novice, double-nested key is map name
-                player_points = {}
-                for (let user_index = 0; user_index < usernames_list.length; user_index++) {
-                    let username = usernames_list[user_index];
-                    user_json = all_players_json_list[user_index]
-                    // If empty object returned then username not found
-                    if (Object.keys(user_json).length == 0) {
-                        window.alert("Username not found: " + username)
-                        results_section_div.style.display = "none"
-                        return
-                    }
-                    //Fill player points
-                    player_points[username] = user_json["points"]["points"]
-                    // Fill unfinished maps dict
-                    player_unfinished_maps_dict[username] = {}
-                    for (const server_type in user_json["types"]) {
-                        player_unfinished_maps_dict[username][server_type] = new Set()
-
-                        if (!(server_type in unfinished_map_details_dict)) {
-                            unfinished_map_details_dict[server_type] = {}
-                        }
-
-                        for (const map_name in user_json["types"][server_type]["maps"]) {
-                            if (user_json["types"][server_type]["maps"][map_name]["finishes"] == 0) {
-                                player_unfinished_maps_dict[username][server_type].add(map_name)
-                                unfinished_map_details_dict[server_type][map_name] = {
-                                    "total_finishes": user_json["types"][server_type]["maps"][map_name]["total_finishes"],
-                                    "points": user_json["types"][server_type]["maps"][map_name]["points"]
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // Filter unfinished maps by commonality
-                common_unfinished_maps_dict = {}
-
-                // Fill dict with first player's unfinished maps
-                common_unfinished_maps_dict = player_unfinished_maps_dict[usernames_list[0]]
-
-                for (let user_index = 1; user_index < usernames_list.length; user_index++) {
-                    for (const server_type in player_unfinished_maps_dict[usernames_list[user_index]]) {
-                        common_unfinished_maps_dict[server_type] = new Set([...player_unfinished_maps_dict[usernames_list[user_index]][server_type]].filter(i => common_unfinished_maps_dict[server_type].has(i)))
-                    }
-                }
-                console.log(common_unfinished_maps_dict)
-                display_results("sorting_easiest")
-
-            } catch (err) {
-                window.alert("Error")
-                console.log(err)
-            }
-        }
-        get_all_players_json()
+        // Only one search at a time, so repeated clicks can't pile up requests to ddnet.org
+        const search_button = document.getElementById("search_button")
+        search_button.disabled = true
+        const search_id = ++latest_search_id
+        get_all_players_json(new_usernames, search_id).finally(() => { search_button.disabled = false })
     }
 
-    function unicodeToURLAllowed(input) {
-        let result = '';
-        for (let i = 0; i < input.length; i++) {
-            const charCode = input.charCodeAt(i);
-            if ((charCode >= 48 && charCode <= 57) || // 0-9
-                (charCode >= 65 && charCode <= 90) || // A-Z
-                (charCode >= 97 && charCode <= 122) || // a-z
-                charCode === 126) { // ~
-                result += input[i];
-            } else {
-                result += `-${charCode}-`;
-            }
+    async function get_all_players_json(new_usernames, search_id) {
+        let results
+        try {
+            results = await fetch_all_players_json(new_usernames)
+        } catch (err) {
+            results = new_usernames.map(username => ({ "username": username, "json": null, "error": err }))
         }
-        return result;
+        if (search_id != latest_search_id) {
+            return // a newer search was started
+        }
+
+        const failed_results = results.filter(result => result.error)
+        if (failed_results.length > 0) {
+            results_section_div.style.display = "none"
+            window.alert("Could not load " + failed_results.length + " of " + results.length + " players:\n\n" + format_fetch_errors(failed_results))
+            return
+        }
+
+        try {
+            const new_details_dict = {}
+            const new_player_points = {}
+            const per_player_unfinished = []
+            for (const result of results) {
+                new_player_points[result.username] = get_player_points(result.json)
+                per_player_unfinished.push(collect_unfinished_maps(result.json, new_details_dict))
+            }
+
+            usernames_list = new_usernames
+            player_points = new_player_points
+            unfinished_map_details_dict = new_details_dict
+            common_unfinished_maps_dict = intersect_unfinished_maps(per_player_unfinished)
+            display_results("sorting_easiest")
+        } catch (err) {
+            console.log(err)
+            results_section_div.style.display = "none"
+            window.alert("Error processing player data: " + err.message)
+        }
     }
 
     function display_results(radio_button_id) {
-        let radio_buttons = document.getElementsByName("sorting_list")
-        for (const radio_button of radio_buttons) {
-            radio_button.checked = false
-        }
+        select_sorting_radio(radio_button_id)
 
-        let current_radio_button = document.getElementById(radio_button_id)
-        current_radio_button.checked = true
-
-        // Sort by points ASC and then by finishes DESC
-        for (const server_type in common_unfinished_maps_dict) {
-            if (radio_button_id == "sorting_easiest") {
-                function compare_points_and_finishes(a, b) {
-                    if (unfinished_map_details_dict[server_type][a]["points"] < unfinished_map_details_dict[server_type][b]["points"]) {
-                        return -1;
-                    }
-                    if (unfinished_map_details_dict[server_type][a]["points"] > unfinished_map_details_dict[server_type][b]["points"]) {
-                        return 1;
-                    }
-                    if (unfinished_map_details_dict[server_type][a]["total_finishes"] < unfinished_map_details_dict[server_type][b]["total_finishes"]) {
-                        return 1;
-                    }
-                    if (unfinished_map_details_dict[server_type][a]["total_finishes"] > unfinished_map_details_dict[server_type][b]["total_finishes"]) {
-                        return -1;
-                    }
-                    return 0;
-                }
-            } else if (radio_button_id == "sorting_name") {
-                function compare_points_and_finishes(a, b) {
-                    return a.localeCompare(b, undefined, { numeric: true })
-                }
-            } else if (radio_button_id == "sorting_most_finishes") {
-                function compare_points_and_finishes(a, b) {
-                    if (unfinished_map_details_dict[server_type][a]["total_finishes"] < unfinished_map_details_dict[server_type][b]["total_finishes"]) {
-                        return 1;
-                    }
-                    if (unfinished_map_details_dict[server_type][a]["total_finishes"] > unfinished_map_details_dict[server_type][b]["total_finishes"]) {
-                        return -1;
-                    }
-                    return 0;
-                }
-            } else if (radio_button_id == "sorting_median_time") {
-                function compare_points_and_finishes(a, b) {
-                    if (map_data.hasOwnProperty(a) && map_data[a].hasOwnProperty("median_time")) {
-                        median_time_a = map_data[a]["median_time"]
-                    } else {
-                        median_time_a = 9e99
-                    }
-                    if (map_data.hasOwnProperty(b) && map_data[b].hasOwnProperty("median_time")) {
-                        median_time_b = map_data[b]["median_time"]
-                    } else {
-                        median_time_b = 9e99
-                    }
-                    if (median_time_a > median_time_b) {
-                        return 1;
-                    }
-                    if (median_time_a < median_time_b) {
-                        return -1;
-                    }
-                    return 0;
-                }
-            } else {
-                1/0 // raise error
-            }
-
-            // Convert into array/list
-            common_unfinished_maps_dict[server_type] = Array.from(common_unfinished_maps_dict[server_type])
-            common_unfinished_maps_dict[server_type].sort(compare_points_and_finishes)
-        }
-
-        map_results_div.innerHTML = ""
-        results_shortcut_links_div.innerHTML = ""
-        player_results_div.innerHTML = ""
+        clear_element(map_results_div)
+        clear_element(results_shortcut_links_div)
+        clear_element(player_results_div)
 
         // Create player links
         for (const username of usernames_list) {
-            let new_shortcut = document.createElement("a")
-            new_shortcut.setAttribute("href", "https://ddnet.org/players/" + unicodeToURLAllowed(username))
-            new_shortcut.setAttribute("target", "_blank")
-            new_shortcut.setAttribute("title", "Open player page on ddnet.org")
-            new_shortcut.setAttribute("class", "player_link")
-            new_shortcut.innerHTML = username + " (" + player_points[username] +"pts)"
-            player_results_div.appendChild(new_shortcut)
+            player_results_div.appendChild(create_player_link(username, player_points[username]))
         }
 
         for (const server_type in common_unfinished_maps_dict) {
-            if (common_unfinished_maps_dict[server_type].length == 0) {
+            const details = unfinished_map_details_dict[server_type] || {}
+            const sorted_map_names = Array.from(common_unfinished_maps_dict[server_type]).sort(get_map_comparator(radio_button_id, details))
+            if (sorted_map_names.length == 0) {
                 // Skip creating section for empty table
                 continue
             }
 
-            // Create shortcut links
-            let new_shortcut = document.createElement("a")
-            new_shortcut.setAttribute("href", "#" + server_type)
-            new_shortcut.setAttribute("class", "server_type_class")
-            new_shortcut.setAttribute("onclick", "highlight_server_type('"+server_type+"')")
-            new_shortcut.innerHTML = server_type + " (" + common_unfinished_maps_dict[server_type].length + ")"
-            results_shortcut_links_div.appendChild(new_shortcut)
+            results_shortcut_links_div.appendChild(create_server_type_shortcut(server_type, sorted_map_names.length))
 
-            // Create tables
-            let new_section_div = document.createElement("div")
-            new_section_div.setAttribute("class", "map_section")
-            new_section_div.id = server_type
-            let new_header = document.createElement("h3")
-            new_header.innerHTML = server_type + " (" + common_unfinished_maps_dict[server_type].length + ")"
-            new_header.style = "text-align: center"
-            let new_table = document.createElement("table")
-
-            let tr = document.createElement("tr")
-            for (header_title of ["Map Name", "Points", "Finishes", "Median/Top Time"]) {
-                let th = document.createElement("th")
-                th.innerHTML = header_title
-                tr.appendChild(th)
-            }
-            new_table.appendChild(tr)
-
-            for (const map_name of common_unfinished_maps_dict[server_type]) {
-                let tr = document.createElement("tr")
-                let td = document.createElement("td")
-                let new_map_shortcut = document.createElement("a")
-                new_map_shortcut.setAttribute("target", "_blank")
-                if (map_data.hasOwnProperty(map_name) && map_data[map_name].hasOwnProperty("website")) {
-                    new_map_shortcut.setAttribute("href", map_data[map_name]["website"])
-                } else {
-                    new_map_shortcut.setAttribute("href", "https://ddnet.org/maps/" + unicodeToURLAllowed(map_name))
-                }
-
-                new_map_shortcut.innerHTML = map_name
-                td.appendChild(new_map_shortcut)
-                tr.appendChild(td)
-
-                td = document.createElement("td")
-                td.innerHTML = unfinished_map_details_dict[server_type][map_name]["points"]
-                tr.appendChild(td)
-
-                td = document.createElement("td")
-                td.innerHTML = unfinished_map_details_dict[server_type][map_name]["total_finishes"]
-                tr.appendChild(td)
-
-                td = document.createElement("td")
-                let median_time = null
-                let top_time = null
-                if (map_data.hasOwnProperty(map_name) && map_data[map_name].hasOwnProperty("median_time")) {
-                    median_time = map_data[map_name]["median_time"]
-                }
-                if (map_data.hasOwnProperty(map_name) && map_data[map_name].hasOwnProperty("fastest_team_finish")) {
-                    if (top_time != null) {
-                        top_time = Math.min(top_time, map_data[map_name]["fastest_team_finish"])
-                    } else {
-                        top_time = map_data[map_name]["fastest_team_finish"]
-                    }
-                }
-                if (map_data.hasOwnProperty(map_name) && map_data[map_name].hasOwnProperty("fastest_rank_finish")) {
-                    if (top_time != null) {
-                        top_time = Math.min(top_time, map_data[map_name]["fastest_rank_finish"])
-                    } else {
-                        top_time = map_data[map_name]["fastest_rank_finish"]
-                    }
-                }
-                if (median_time != null) {
-                    if (median_time < 3600) {
-                        median_time = new Date(median_time * 1000).toISOString().substring(14, 19)
-                    } else {
-                        median_time = new Date(median_time * 1000).toISOString().substring(11, 19)
-                    }
-                } else {
-                    median_time = "?"
-                }
-
-                if (top_time != null) {
-                    if (top_time < 3600) {
-                        top_time = new Date(top_time * 1000).toISOString().substring(14, 19)
-                    } else {
-                        top_time = new Date(top_time * 1000).toISOString().substring(11, 19)
-                    }
-                } else {
-                    top_time = "?"
-                }
-                td.innerHTML = median_time + " / " + top_time
-                tr.appendChild(td)
-
-                new_table.appendChild(tr)
-            }
-
-            new_section_div.appendChild(new_header)
-            new_section_div.appendChild(new_table)
-
-            map_results_div.appendChild(new_section_div)
+            const rows = sorted_map_names.map(map_name => [
+                create_map_link(map_name),
+                details[map_name] ? details[map_name]["points"] : null,
+                details[map_name] ? details[map_name]["total_finishes"] : null,
+                format_time(get_median_time(map_name)) + " / " + format_time(get_top_time(map_name))
+            ])
+            map_results_div.appendChild(create_map_section(server_type, ["Map Name", "Points", "Finishes", "Median/Top Time"], rows))
         }
-        if (map_results_div.innerHTML == "") {
-            map_results_div.innerHTML = "None"
+        if (!map_results_div.hasChildNodes()) {
+            map_results_div.textContent = "None"
         }
         results_sorting_buttons_div.style.display = "block"
     }
 
-    function highlight_server_type(element_id) {
-        all_servers = document.getElementsByClassName("map_section")
-        for (server of all_servers) {
-            server.classList.remove("highlighted")
-        }
-        current_server = document.getElementById(element_id)
-        current_server.classList.add("highlighted")
+    function set_server_dropdown_placeholder(server_selection_dropdown, text) {
+        const option = document.createElement("option")
+        option.value = "none"
+        option.selected = true
+        option.textContent = text
+        server_selection_dropdown.replaceChildren(option)
     }
 
     function loadServerNames() {
@@ -558,65 +405,63 @@
         // Filter servers by location (only show servers with location "af:za")
         // Filter servers by game_type (only show servers with game_type "DDraceNetwork")
         // Filter servers by number of clients (only show servers with more than 0 clients)
-        // Parse JSON and fill dropdown box with server names (with some players names in brackets)
-        let server_selection_dropdown = document.getElementById("server_selection_dropdown")
-        server_selection_dropdown.innerHTML = "<option selected value='none'>Loading</option>"
+        // Fill dropdown box with server names (with some players names in brackets)
+        // Server and player names are set by anyone, so only ever use textContent here.
+        const server_selection_dropdown = document.getElementById("server_selection_dropdown")
+        const refresh_button = document.getElementById("server_names_refresh_button")
+        set_server_dropdown_placeholder(server_selection_dropdown, "Loading")
         const MAX_PLAYER_DISPLAY_COUNT = 5;
-        document.getElementById("server_names_refresh_button").disabled = true
+        refresh_button.disabled = true
         fetch("https://master1.ddnet.org/ddnet/15/servers.json")
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error("HTTP " + response.status)
+                }
+                return response.json()
+            })
             .then(data => {
-                server_selection_dropdown.innerHTML = "<option selected value='none'>Select server</option>"
-                for (const server of data["servers"]) {
+                set_server_dropdown_placeholder(server_selection_dropdown, "Select server")
+                for (const server of data["servers"] || []) {
+                    const info = server["info"] || {}
+                    const clients = Array.isArray(info["clients"]) ? info["clients"] : []
                     if (server["location"] != "af:za") {
                         continue
                     }
-                    if (server["info"]["game_type"] != "DDraceNetwork") {
+                    if (info["game_type"] != "DDraceNetwork") {
                         continue
                     }
-                    if (server["info"]["clients"].length == 0) {
+                    if (clients.length == 0) {
                         continue
                     }
-                    let server_name = server["info"]["name"]
-                    let server_players = server["info"]["clients"].slice(0, MAX_PLAYER_DISPLAY_COUNT).map(player => player["name"]).join(", ")
-                    let new_option = document.createElement("option")
-                    new_option.value = JSON.stringify(server["info"]["clients"].map(player => player["name"]))
-                    new_option.innerHTML = server_name + "(" + server["info"]["clients"].length + "): " + server_players
-                    if (server["info"]["clients"].length > MAX_PLAYER_DISPLAY_COUNT) {
-                        new_option.innerHTML += "..."
+                    const player_names = clients.map(player => String(player["name"]))
+                    const new_option = document.createElement("option")
+                    new_option.value = JSON.stringify(player_names)
+                    let option_text = String(info["name"]) + "(" + clients.length + "): " + player_names.slice(0, MAX_PLAYER_DISPLAY_COUNT).join(", ")
+                    if (clients.length > MAX_PLAYER_DISPLAY_COUNT) {
+                        option_text += "..."
                     }
+                    new_option.textContent = option_text
                     server_selection_dropdown.appendChild(new_option)
                 }
-                document.getElementById("server_names_refresh_button").disabled = false
+                refresh_button.disabled = false
             })
             .catch(error => {
                 console.error('Error:', error);
-                document.getElementById("server_names_refresh_button").disabled = false
+                set_server_dropdown_placeholder(server_selection_dropdown, "Could not load servers (" + error.message + ")")
+                refresh_button.disabled = false
             });
     }
 
     function loadNamesFromSelectedServer() {
-        let server_selection_dropdown = document.getElementById("server_selection_dropdown")
-        let selected_server = server_selection_dropdown.options[server_selection_dropdown.selectedIndex].value
+        const server_selection_dropdown = document.getElementById("server_selection_dropdown")
+        if (server_selection_dropdown.selectedIndex < 0) {
+            return
+        }
+        const selected_server = server_selection_dropdown.options[server_selection_dropdown.selectedIndex].value
         if (selected_server == "none") {
             return
         }
-        let selected_server_players = JSON.parse(selected_server)
-        let num_textboxes = get_num_textboxes()
-        let num_usernames = selected_server_players.length
-        while (num_textboxes > num_usernames) {
-            remove_textbox()
-            num_textboxes = get_num_textboxes();
-        }
-        while (num_textboxes < num_usernames) {
-            add_textbox()
-            num_textboxes = get_num_textboxes();
-        }
-
-        let all_text_divs = document.getElementsByClassName("textdiv")
-        for (let index = 0; index < num_usernames; index++) {
-            all_text_divs[index].getElementsByTagName("input")[0].value = selected_server_players[index]
-        }
+        fill_textboxes(JSON.parse(selected_server))
     }
 
 </script>

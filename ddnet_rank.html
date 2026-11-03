@@ -45,7 +45,8 @@
     <link href="css/autocomplete.css" rel="stylesheet" />
     <script src="js/zaf_players.js"></script>
     <script src="js/autocomplete.js"></script>
-    <script src="js/map_data_20240503.js"></script>
+    <script src="js/map_data.js"></script>
+    <script src="js/ddnet_common.js"></script>
     <style>
         nav a {
             color: black;
@@ -84,7 +85,7 @@
             <div style="text-align: center;">
                 <br>
                 <br>
-                <button class="hover_button button_cyan" onclick="search()">Search</button>
+                <button id="search_button" class="hover_button button_cyan" onclick="search()">Search</button>
             </div>
         </div>
         <br>
@@ -99,15 +100,15 @@
             <br>
             <div style="text-align: center; display: none;" id="results_sorting_buttons_div">
                 <div>
-                    <input type="radio" id="sorting_percentile" name="sorting_list" value="easiest" checked onclick="display_results('sorting_percentile');">
+                    <input type="radio" id="sorting_percentile" name="sorting_list" value="percentile" checked onclick="display_results('sorting_percentile');">
                     <label for="sorting_percentile">Sort by lowest percentile</label>
                 </div>
                 <div title='"Easiest" means least points and then most finishes'>
-                    <input type="radio" id="sorting_easiest" name="sorting_list" value="easiest" checked onclick="display_results('sorting_easiest');">
+                    <input type="radio" id="sorting_easiest" name="sorting_list" value="easiest" onclick="display_results('sorting_easiest');">
                     <label for="sorting_easiest">Sort by "easiest"</label>
                 </div>
                 <div>
-                    <input type="radio" id="sorting_name" name="sorting_list" value="name" checked onclick="display_results('sorting_name');">
+                    <input type="radio" id="sorting_name" name="sorting_list" value="name" onclick="display_results('sorting_name');">
                     <label for="sorting_name">Sort by name</label>
                 </div>
                 <div>
@@ -122,6 +123,7 @@
             <br>
             <div id="map_results_div"></div>
             <p id="map_data_last_updated_p">Map times last updated: </p>
+            <p>Median time is the median of each player's best time on the map, so it can differ from ddnet.org (which counts every finish).</p>
         </div>
     </main>
     <footer>
@@ -130,380 +132,141 @@
 </body>
 
 <script>
-    autocomplete(document.getElementById("text_player1"), zaf_players);
+    const player_text_input = document.getElementById("text_player1")
+    autocomplete(player_text_input, zaf_players);
 
-    var textinputs_div = document.getElementById("textinputs")
-    var results_section_div = document.getElementById("results_section_div")
-    var map_results_div = document.getElementById("map_results_div")
-    var results_shortcut_links_div = document.getElementById("results_shortcut_links_div")
-    var results_sorting_buttons_div = document.getElementById("results_sorting_buttons_div")
-    var player_results_div = document.getElementById("player_results_div")
-    var common_finished_maps_dict = {}
-    var finished_map_details_dict = {} //first key is server type e.g. Novice, nested key is map name with details
-    var player_points = {}
-    var usernames_list = []
+    const results_section_div = document.getElementById("results_section_div")
+    const map_results_div = document.getElementById("map_results_div")
+    const results_shortcut_links_div = document.getElementById("results_shortcut_links_div")
+    const results_sorting_buttons_div = document.getElementById("results_sorting_buttons_div")
+    const player_results_div = document.getElementById("player_results_div")
+    let finished_maps_dict = {} // key is server type e.g. Novice, value is array of finished map names
+    let finished_map_details_dict = {} // first key is server type e.g. Novice, nested key is map name with details
+    let current_username = ""
+    let current_player_points = null
+    let latest_search_id = 0
 
-    let map_data_last_updated_p = document.getElementById("map_data_last_updated_p")
-    map_data_last_updated_p.innerHTML += map_data_last_updated
-
-    function get_num_textboxes() {
-        let textdiv_elements = textinputs_div.getElementsByClassName("textdiv")
-        let latest_player_number = -1
-
-        for (const textdiv_element of textdiv_elements) {
-            cur_data_num = parseInt(textdiv_element.getAttribute("data-num"))
-            if (cur_data_num > latest_player_number) {
-                latest_player_number = cur_data_num
-            }
-        }
-
-        return parseInt(latest_player_number)
-    }
+    show_map_data_last_updated()
 
     function loadUsernamesFromStorage() {
-        // Load last used usernames on page load
-        usernames_list = JSON.parse(localStorage.getItem("usernames"));
-        if (!usernames_list) {
-            return
-        }
-        let num_textboxes = get_num_textboxes();
-        let num_usernames = usernames_list.length
-
-        for (let index = 1; index <= num_textboxes; index++) {
-            const textinput_element = document.getElementById("text_player" + index)
-            textinput_element.value = usernames_list[index-1]
+        // Load last used username on page load (first entry of the list shared with ddnet.html)
+        const saved_usernames = load_saved_usernames()
+        if (saved_usernames && saved_usernames.length > 0) {
+            player_text_input.value = saved_usernames[0]
         }
     }
     loadUsernamesFromStorage()
 
-    function search() {
-        let num_textboxes = get_num_textboxes()
-
-        usernames_list = []
-        for (let index = 1; index <= num_textboxes; index++) {
-            const textinput_element = document.getElementById("text_player" + index)
-            if (textinput_element == null) {
-                console.log("error retrieving element")
-                continue
-            }
-            username = textinput_element.value
-            if (username == "") {
-                window.alert("Please fill in all the textboxes (or remove unused ones)")
-                return
-            }
-            usernames_list.push(username)
-        }
-
-        // Save usernames to local storage for next load
-        localStorage.setItem("usernames", JSON.stringify(usernames_list));
-
-        results_section_div.style.display = "block"
-
-        map_results_div.innerHTML = "<div class='loading-spinner'></div>"
-        results_shortcut_links_div.innerHTML = ""
-        player_results_div.innerHTML = "<div class='loading-spinner'></div>"
-        results_sorting_buttons_div.style.display = "none"
-
-        const get_all_players_json = async () => {
-            try {
-                let response = await Promise.all(usernames_list.map(username => fetch("https://ddnet.org/players/?json2=" + username)))
-                let response_json = await Promise.all(response.map(e => e.json()))
-
-                console.log("Processing...")
-                let all_players_json_list = response_json
-
-                finished_map_details_dict = {} //first key is server type e.g. Novice, nested key is map name with details
-                let player_finished_maps_dict = {} // first key is username, nested key is server type e.g. Novice, double-nested key is map name
-                player_points = {}
-                for (let user_index = 0; user_index < usernames_list.length; user_index++) {
-                    let username = usernames_list[user_index];
-                    user_json = all_players_json_list[user_index]
-                    // If empty object returned then username not found
-                    if (Object.keys(user_json).length == 0) {
-                        window.alert("Username not found: " + username)
-                        results_section_div.style.display = "none"
-                        return
-                    }
-                    //Fill player points
-                    player_points[username] = user_json["points"]["points"]
-                    // Fill finished maps dict
-                    player_finished_maps_dict[username] = {}
-                    for (const server_type in user_json["types"]) {
-                        player_finished_maps_dict[username][server_type] = new Set()
-
-                        if (!(server_type in finished_map_details_dict)) {
-                            finished_map_details_dict[server_type] = {}
-                        }
-
-                        for (const map_name in user_json["types"][server_type]["maps"]) {
-                            if (user_json["types"][server_type]["maps"][map_name]["finishes"] > 0) {
-                                player_finished_maps_dict[username][server_type].add(map_name)
-                                finished_map_details_dict[server_type][map_name] = {
-                                    "total_finishes": user_json["types"][server_type]["maps"][map_name]["total_finishes"],
-                                    "points": user_json["types"][server_type]["maps"][map_name]["points"],
-                                    "rank": user_json["types"][server_type]["maps"][map_name]["rank"],
-                                    "time": user_json["types"][server_type]["maps"][map_name]["time"],
-                                    "rank_percentile": (1 - (user_json["types"][server_type]["maps"][map_name]["rank"] / user_json["types"][server_type]["maps"][map_name]["total_finishes"])) * 100
-                                }
-                            }
-                        }
+    // Returns {maps: {type: [map names]}, details: {type: {map: {...}}}} for maps the player has finished
+    function collect_finished_maps(player_json) {
+        const maps_dict = {}
+        const details_dict = {}
+        for (const server_type in player_json["types"]) {
+            const maps = (player_json["types"][server_type] || {})["maps"] || {}
+            maps_dict[server_type] = []
+            details_dict[server_type] = {}
+            for (const map_name in maps) {
+                const map_info = maps[map_name]
+                if (map_info["finishes"] > 0) {
+                    maps_dict[server_type].push(map_name)
+                    details_dict[server_type][map_name] = {
+                        "total_finishes": map_info["total_finishes"],
+                        "points": map_info["points"],
+                        "rank": map_info["rank"],
+                        "time": map_info["time"],
+                        "rank_percentile": rank_percentile(map_info["rank"], map_info["total_finishes"])
                     }
                 }
-
-                // Fill dict with first player's finished maps
-                common_finished_maps_dict = player_finished_maps_dict[usernames_list[0]]
-
-                display_results("sorting_percentile")
-
-            } catch (err) {
-                window.alert("Error")
-                console.log(err)
             }
         }
-        get_all_players_json()
+        return { "maps": maps_dict, "details": details_dict }
     }
 
-    function unicodeToURLAllowed(input) {
-        let result = '';
-        for (let i = 0; i < input.length; i++) {
-            const charCode = input.charCodeAt(i);
-            if ((charCode >= 48 && charCode <= 57) || // 0-9
-                (charCode >= 65 && charCode <= 90) || // A-Z
-                (charCode >= 97 && charCode <= 122) || // a-z
-                charCode === 126) { // ~
-                result += input[i];
-            } else {
-                result += `-${charCode}-`;
-            }
+    function search() {
+        const username = player_text_input.value
+        if (username == "") {
+            window.alert("Please fill in the player name")
+            return
         }
-        return result;
+
+        // Save username to local storage for next load
+        save_usernames([username])
+
+        results_section_div.style.display = "block"
+        show_loading_spinner(map_results_div)
+        clear_element(results_shortcut_links_div)
+        show_loading_spinner(player_results_div)
+        results_sorting_buttons_div.style.display = "none"
+
+        // Only one search at a time, so repeated clicks can't pile up requests to ddnet.org
+        const search_button = document.getElementById("search_button")
+        search_button.disabled = true
+        const search_id = ++latest_search_id
+        get_player_json(username, search_id).finally(() => { search_button.disabled = false })
+    }
+
+    async function get_player_json(username, search_id) {
+        let player_json
+        try {
+            player_json = await fetch_player_json(username)
+        } catch (err) {
+            if (search_id == latest_search_id) {
+                console.log(err)
+                results_section_div.style.display = "none"
+                window.alert(err.message)
+            }
+            return
+        }
+        if (search_id != latest_search_id) {
+            return // a newer search was started
+        }
+
+        try {
+            const collected = collect_finished_maps(player_json)
+            current_username = username
+            current_player_points = get_player_points(player_json)
+            finished_maps_dict = collected["maps"]
+            finished_map_details_dict = collected["details"]
+            display_results("sorting_percentile")
+        } catch (err) {
+            console.log(err)
+            results_section_div.style.display = "none"
+            window.alert("Error processing player data: " + err.message)
+        }
     }
 
     function display_results(radio_button_id) {
-        let radio_buttons = document.getElementsByName("sorting_list")
-        for (const radio_button of radio_buttons) {
-            radio_button.checked = false
-        }
+        select_sorting_radio(radio_button_id)
 
-        let current_radio_button = document.getElementById(radio_button_id)
-        current_radio_button.checked = true
+        clear_element(map_results_div)
+        clear_element(results_shortcut_links_div)
+        clear_element(player_results_div)
 
-        // Sort by points ASC and then by finishes DESC
-        for (const server_type in common_finished_maps_dict) {
-            if (radio_button_id == "sorting_easiest") {
-                function compare_points_and_finishes(a, b) {
-                    if (finished_map_details_dict[server_type][a]["points"] < finished_map_details_dict[server_type][b]["points"]) {
-                        return -1;
-                    }
-                    if (finished_map_details_dict[server_type][a]["points"] > finished_map_details_dict[server_type][b]["points"]) {
-                        return 1;
-                    }
-                    if (finished_map_details_dict[server_type][a]["total_finishes"] < finished_map_details_dict[server_type][b]["total_finishes"]) {
-                        return 1;
-                    }
-                    if (finished_map_details_dict[server_type][a]["total_finishes"] > finished_map_details_dict[server_type][b]["total_finishes"]) {
-                        return -1;
-                    }
-                    return 0;
-                }
-            } else if (radio_button_id == "sorting_name") {
-                function compare_points_and_finishes(a, b) {
-                    return a.localeCompare(b, undefined, { numeric: true })
-                }
-            } else if (radio_button_id == "sorting_most_finishes") {
-                function compare_points_and_finishes(a, b) {
-                    if (finished_map_details_dict[server_type][a]["total_finishes"] < finished_map_details_dict[server_type][b]["total_finishes"]) {
-                        return 1;
-                    }
-                    if (finished_map_details_dict[server_type][a]["total_finishes"] > finished_map_details_dict[server_type][b]["total_finishes"]) {
-                        return -1;
-                    }
-                    return 0;
-                }
-            } else if (radio_button_id == "sorting_median_time") {
-                function compare_points_and_finishes(a, b) {
-                    if (map_data.hasOwnProperty(a) && map_data[a].hasOwnProperty("median_time")) {
-                        median_time_a = map_data[a]["median_time"]
-                    } else {
-                        median_time_a = 9e99
-                    }
-                    if (map_data.hasOwnProperty(b) && map_data[b].hasOwnProperty("median_time")) {
-                        median_time_b = map_data[b]["median_time"]
-                    } else {
-                        median_time_b = 9e99
-                    }
-                    if (median_time_a > median_time_b) {
-                        return 1;
-                    }
-                    if (median_time_a < median_time_b) {
-                        return -1;
-                    }
-                    return 0;
-                }
-            } else if (radio_button_id == "sorting_percentile") {
-                function compare_points_and_finishes(a, b) {
-                    if (finished_map_details_dict[server_type][a]["rank_percentile"] > finished_map_details_dict[server_type][b]["rank_percentile"]) {
-                        return 1;
-                    }
-                    if (finished_map_details_dict[server_type][a]["rank_percentile"] < finished_map_details_dict[server_type][b]["rank_percentile"]) {
-                        return -1;
-                    }
-                    return 0;
-                }
-            } else {
-                1/0 // raise error
-            }
+        player_results_div.appendChild(create_player_link(current_username, current_player_points))
 
-            // Convert into array/list
-            common_finished_maps_dict[server_type] = Array.from(common_finished_maps_dict[server_type])
-            common_finished_maps_dict[server_type].sort(compare_points_and_finishes)
-        }
-
-        map_results_div.innerHTML = ""
-        results_shortcut_links_div.innerHTML = ""
-        player_results_div.innerHTML = ""
-
-        // Create player links
-        for (const username of usernames_list) {
-            let new_shortcut = document.createElement("a")
-            new_shortcut.setAttribute("href", "https://ddnet.org/players/" + unicodeToURLAllowed(username))
-            new_shortcut.setAttribute("target", "_blank")
-            new_shortcut.setAttribute("title", "Open player page on ddnet.org")
-            new_shortcut.setAttribute("class", "player_link")
-            new_shortcut.innerHTML = username + " (" + player_points[username] +"pts)"
-            player_results_div.appendChild(new_shortcut)
-        }
-
-        for (const server_type in common_finished_maps_dict) {
-            if (common_finished_maps_dict[server_type].length == 0) {
+        for (const server_type in finished_maps_dict) {
+            const details = finished_map_details_dict[server_type] || {}
+            const sorted_map_names = finished_maps_dict[server_type].slice().sort(get_map_comparator(radio_button_id, details))
+            if (sorted_map_names.length == 0) {
                 // Skip creating section for empty table
                 continue
             }
 
-            // Create shortcut links
-            let new_shortcut = document.createElement("a")
-            new_shortcut.setAttribute("href", "#" + server_type)
-            new_shortcut.setAttribute("class", "server_type_class")
-            new_shortcut.setAttribute("onclick", "highlight_server_type('"+server_type+"')")
-            new_shortcut.innerHTML = server_type + " (" + common_finished_maps_dict[server_type].length + ")"
-            results_shortcut_links_div.appendChild(new_shortcut)
+            results_shortcut_links_div.appendChild(create_server_type_shortcut(server_type, sorted_map_names.length))
 
-            // Create tables
-            let new_section_div = document.createElement("div")
-            new_section_div.setAttribute("class", "map_section")
-            new_section_div.id = server_type
-            let new_header = document.createElement("h3")
-            new_header.innerHTML = server_type + " (" + common_finished_maps_dict[server_type].length + ")"
-            new_header.style = "text-align: center"
-            let new_table = document.createElement("table")
-
-            let tr = document.createElement("tr")
-            for (header_title of ["Map Name", "Points", "Rank/Finishes", "%ile", "Your Time/Median/Top Time"]) {
-                let th = document.createElement("th")
-                th.innerHTML = header_title
-                tr.appendChild(th)
-            }
-            new_table.appendChild(tr)
-
-            for (const map_name of common_finished_maps_dict[server_type]) {
-                let tr = document.createElement("tr")
-                let td = document.createElement("td")
-                let new_map_shortcut = document.createElement("a")
-                new_map_shortcut.setAttribute("target", "_blank")
-                if (map_data.hasOwnProperty(map_name) && map_data[map_name].hasOwnProperty("website")) {
-                    new_map_shortcut.setAttribute("href", map_data[map_name]["website"])
-                } else {
-                    new_map_shortcut.setAttribute("href", "https://ddnet.org/maps/" + unicodeToURLAllowed(map_name))
-                }
-
-                new_map_shortcut.innerHTML = map_name
-                td.appendChild(new_map_shortcut)
-                tr.appendChild(td)
-
-                td = document.createElement("td")
-                td.innerHTML = finished_map_details_dict[server_type][map_name]["points"]
-                tr.appendChild(td)
-
-                td = document.createElement("td")
-                td.innerHTML = `${finished_map_details_dict[server_type][map_name]["rank"]}/${finished_map_details_dict[server_type][map_name]["total_finishes"]}`
-                tr.appendChild(td)
-
-                td = document.createElement("td")
-                td.innerHTML = (Math.floor((finished_map_details_dict[server_type][map_name]["rank_percentile"])*10)/10).toFixed(1);
-                tr.appendChild(td)
-
-                td = document.createElement("td")
-                let median_time = null
-                let top_time = null
-                let your_time = finished_map_details_dict[server_type][map_name]["time"]
-                if (map_data.hasOwnProperty(map_name) && map_data[map_name].hasOwnProperty("median_time")) {
-                    median_time = map_data[map_name]["median_time"]
-                }
-                if (map_data.hasOwnProperty(map_name) && map_data[map_name].hasOwnProperty("fastest_team_finish")) {
-                    if (top_time != null) {
-                        top_time = Math.min(top_time, map_data[map_name]["fastest_team_finish"])
-                    } else {
-                        top_time = map_data[map_name]["fastest_team_finish"]
-                    }
-                }
-                if (map_data.hasOwnProperty(map_name) && map_data[map_name].hasOwnProperty("fastest_rank_finish")) {
-                    if (top_time != null) {
-                        top_time = Math.min(top_time, map_data[map_name]["fastest_rank_finish"])
-                    } else {
-                        top_time = map_data[map_name]["fastest_rank_finish"]
-                    }
-                }
-                if (median_time != null) {
-                    if (median_time < 3600) {
-                        median_time = new Date(median_time * 1000).toISOString().substring(14, 19)
-                    } else {
-                        median_time = new Date(median_time * 1000).toISOString().substring(11, 19)
-                    }
-                } else {
-                    median_time = "?"
-                }
-                if (top_time != null) {
-                    if (top_time < 3600) {
-                        top_time = new Date(top_time * 1000).toISOString().substring(14, 19)
-                    } else {
-                        top_time = new Date(top_time * 1000).toISOString().substring(11, 19)
-                    }
-                } else {
-                    top_time = "?"
-                }
-                if (your_time != null) {
-                    if (your_time < 3600) {
-                        your_time = new Date(your_time * 1000).toISOString().substring(14, 19)
-                    } else {
-                        your_time = new Date(your_time * 1000).toISOString().substring(11, 19)
-                    }
-                } else {
-                    your_time = "?"
-                }
-                td.innerHTML = your_time + " / " + median_time + " / " + top_time
-                tr.appendChild(td)
-
-                new_table.appendChild(tr)
-            }
-
-            new_section_div.appendChild(new_header)
-            new_section_div.appendChild(new_table)
-
-            map_results_div.appendChild(new_section_div)
+            const rows = sorted_map_names.map(map_name => [
+                create_map_link(map_name),
+                details[map_name]["points"],
+                format_value(details[map_name]["rank"]) + "/" + format_value(details[map_name]["total_finishes"]),
+                format_percentile(details[map_name]["rank_percentile"]),
+                format_time(details[map_name]["time"]) + " / " + format_time(get_median_time(map_name)) + " / " + format_time(get_top_time(map_name))
+            ])
+            map_results_div.appendChild(create_map_section(server_type, ["Map Name", "Points", "Rank/Finishes", "%ile", "Your Time/Median/Top Time"], rows))
         }
-        if (map_results_div.innerHTML == "") {
-            map_results_div.innerHTML = "None"
+        if (!map_results_div.hasChildNodes()) {
+            map_results_div.textContent = "None"
         }
         results_sorting_buttons_div.style.display = "block"
-    }
-
-    function highlight_server_type(element_id) {
-        all_servers = document.getElementsByClassName("map_section")
-        for (server of all_servers) {
-            server.classList.remove("highlighted")
-        }
-        current_server = document.getElementById(element_id)
-        current_server.classList.add("highlighted")
     }
 </script>
 

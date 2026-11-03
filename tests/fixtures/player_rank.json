@@ -1,0 +1,43 @@
+{
+  "player": "FixturePlayer",
+  "points": {"rank": 6902, "points": 5846, "total": 33794},
+  "team_rank": {"rank": null},
+  "rank": {"rank": null},
+  "types": {
+    "Novice": {
+      "points": {"total": 1000, "points": 13, "rank": 50000},
+      "team_rank": {"rank": null},
+      "rank": {"rank": 50000},
+      "maps": {
+        "The Forest": {"points": 3, "total_finishes": 35975, "finishes": 0},
+        "Diversity": {"points": 5, "total_finishes": 61453, "finishes": 1, "team_rank": 1969, "rank": 13603, "time": 779.94, "first_finish": 1752180238.0},
+        "Alpha": {"points": 1, "total_finishes": 100, "finishes": 3, "rank": 1, "time": 50.2, "first_finish": 1597781598.0},
+        "Beta": {"points": 2, "total_finishes": 501, "finishes": 1, "rank": 251, "time": 4100, "first_finish": 1600000000.0}
+      }
+    },
+    "Moderate": {
+      "points": {"total": 2000, "points": 20, "rank": 40000},
+      "team_rank": {"rank": null},
+      "rank": {"rank": 40000},
+      "maps": {
+        "Down Bass": {"points": 13, "total_finishes": 7776, "finishes": 0},
+        "Bloom": {"points": 11, "total_finishes": 4541, "finishes": 2, "rank": 4541, "time": 3700.5, "first_finish": 1700000000.0},
+        "<b>x</b>": {"points": 9, "total_finishes": 10, "finishes": 1, "rank": 4, "time": 5, "first_finish": 1710000000.0}
+      }
+    },
+    "Brutal": {
+      "points": {"total": 3000, "points": 0, "rank": null},
+      "team_rank": {"rank": null},
+      "rank": {"rank": null},
+      "maps": {
+        "Hard": {"points": 30, "total_finishes": 3, "finishes": 0}
+      }
+    },
+    "Solo": {
+      "points": {"total": 0, "points": 0, "rank": null},
+      "team_rank": {"rank": null},
+      "rank": {"rank": null},
+      "maps": {}
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "name": "unlucksmcgee-site-tests",
+  "private": true,
+  "description": "jsdom tests for ddnet.html, ddnet_rank.html and their shared js",
+  "scripts": {
+    "test": "node --test"
+  },
+  "devDependencies": {
+    "jsdom": "^29.1.1"
+  }
+}
