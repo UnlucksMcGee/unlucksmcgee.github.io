@@ -56,100 +56,87 @@
 
         gtag('config', 'G-J887VM1ELW');
     </script>
-    <style>
-        nav a {
-            color: black;
-            background-color: var(--link_background_color);
-            border: none
-        }
-        nav a:hover {
-            background-color: var(--link_hover_color);
-        }
-    </style>
 </head>
 
 <body>
     <header>
         <nav>
-            <a href="/">Home</a>
+            <a href="/" class="nav_home">&larr; Home</a>
             <h1>DDNet Unfinished Maps Finder</h1>
         </nav>
     </header>
     <main>
-        <br>
-        <h2 style="text-align: center;">Find unfinished maps in common between 1 or more players.</h2>
-        <br>
-        <div style="text-align: center;">
-            <input type="checkbox" id="show_hide_usernames" onclick="document.getElementById('server_names_div').style.display = this.checked ? 'block' : 'none'; if (this.checked) {loadServerNames()};">
-            <label for="show_hide_usernames">Load names from server</label>
-            <div id="server_names_div" style="display: none;">
-                <button id="server_names_refresh_button" class="hover_button button_blue" style="font-weight: bold;" disabled onclick="loadServerNames()">⟳</button>
-                <select id="server_selection_dropdown">
-                    <option selected value="none">Loading...</option>
-                </select>
-                <button class="hover_button button_green" onclick="loadNamesFromSelectedServer()">Load names from this server</button>
-            </div>
-        <br>
-        <br>
-        <div
-            style="margin: 0 auto; width: fit-content; padding: 1rem; background-color: var(--secondary_colour); border-radius: 1rem; box-shadow: 0px 0px 6px 0px rgba(0, 0, 0, 0.5);">
-            <div id="textinputs">
+        <div class="page_intro">
+            <h2>Find unfinished maps you have in common</h2>
+            <p>Enter one or more players to see which maps none of them have finished yet.</p>
+        </div>
 
-                <p>Enter player usernames here: (case-sensitive!)</p>
-                <br>
-                <div class="textdiv">
-                    <input type="text" class="username_text_input" value="UnlucksMcGee"><button class="hover_button button_red" onclick="this.parentElement.remove()">X</button>
-                </div>
-                <div class="textdiv">
-                    <input type="text" class="username_text_input" value="Eyesore"><button class="hover_button button_red" onclick="this.parentElement.remove()">X</button>
+        <div class="card search_card">
+            <div class="server_loader">
+                <label class="toggle">
+                    <input type="checkbox" id="show_hide_usernames" onclick="document.getElementById('server_names_div').style.display = this.checked ? 'block' : 'none'; if (this.checked) {loadServerNames()};">
+                    Load names from a server
+                </label>
+                <div id="server_names_div" style="display: none;">
+                    <div class="server_row">
+                        <select id="server_selection_dropdown" aria-label="Server">
+                            <option selected value="none">Loading...</option>
+                        </select>
+                        <button id="server_names_refresh_button" class="btn btn_icon" title="Refresh server list" aria-label="Refresh server list" disabled onclick="loadServerNames()">&#x27F3;</button>
+                    </div>
+                    <button class="btn btn_secondary btn_block" onclick="loadNamesFromSelectedServer()">Use players from this server</button>
                 </div>
             </div>
-            <br>
-            <div style="text-align: center;">
-                <button class="hover_button button_green" onclick="add_textbox()">&nbsp;+&nbsp;</button>
-                <br>
-                <br>
-                <br>
-                <br>
-                <button id="search_button" class="hover_button button_cyan" onclick="search()">Search</button>
+
+            <p class="field_label">Players <span class="field_hint">(names are case-sensitive)</span></p>
+            <div id="textinputs">
+                <div class="textdiv">
+                    <input type="text" class="username_text_input" value="UnlucksMcGee" aria-label="Player name"><button class="btn btn_icon btn_remove" title="Remove player" aria-label="Remove player" onclick="this.parentElement.remove()">&times;</button>
+                </div>
+                <div class="textdiv">
+                    <input type="text" class="username_text_input" value="Eyesore" aria-label="Player name"><button class="btn btn_icon btn_remove" title="Remove player" aria-label="Remove player" onclick="this.parentElement.remove()">&times;</button>
+                </div>
+            </div>
+            <div class="search_actions">
+                <button class="btn btn_ghost" onclick="add_textbox()">+ Add player</button>
+                <button id="search_button" class="btn btn_primary btn_block" onclick="search()">Search</button>
             </div>
         </div>
-        <br>
-        <br>
+
         <div id="results_section_div" style="display: none;">
-            <h3 style="text-align: center; margin-bottom: 1rem;">Players</h3>
-            <div style="text-align: center;" id="player_results_div"></div>
-            <br>
-            <h3 style="text-align: center; margin-bottom: 1rem;">Unfinished Maps</h3>
-            <div style="text-align: center;" id="results_shortcut_links_div"></div>
-            <br>
-            <br>
-            <div style="text-align: center; display: none;" id="results_sorting_buttons_div">
-                <div title='"Easiest" means least points and then most finishes'>
-                    <input type="radio" id="sorting_easiest" name="sorting_list" value="easiest" checked onclick="display_results('sorting_easiest');">
-                    <label for="sorting_easiest">Sort by "easiest"</label>
+            <section class="results_block">
+                <h3 class="section_title">Players</h3>
+                <div id="player_results_div"></div>
+            </section>
+            <h3 class="section_title">Unfinished maps</h3>
+            <div id="results_sorting_buttons_div" style="display: none;">
+                <div class="sort_row">
+                    <span class="sort_label" id="sort_label">Sort by</span>
+                    <div class="sort_options" role="radiogroup" aria-labelledby="sort_label" aria-describedby="sort_description">
+                        <div>
+                            <input type="radio" id="sorting_easiest" name="sorting_list" data-description="Fewest points first, then most finishes" value="easiest" checked onclick="display_results('sorting_easiest');">
+                            <label for="sorting_easiest">Easiest</label>
+                        </div>
+                        <div>
+                            <input type="radio" id="sorting_name" name="sorting_list" data-description="Alphabetical by map name" value="name" onclick="display_results('sorting_name');">
+                            <label for="sorting_name">Name</label>
+                        </div>
+                        <div>
+                            <input type="radio" id="sorting_most_finishes" name="sorting_list" data-description="Most finished maps first" value="most_finishes" onclick="display_results('sorting_most_finishes');">
+                            <label for="sorting_most_finishes">Most finishes</label>
+                        </div>
+                        <div>
+                            <input type="radio" id="sorting_median_time" name="sorting_list" data-description="Shortest median finish time first" value="median_time" onclick="display_results('sorting_median_time');">
+                            <label for="sorting_median_time">Shortest median time</label>
+                        </div>
+                    </div>
                 </div>
-                <div>
-                    <input type="radio" id="sorting_name" name="sorting_list" value="name" onclick="display_results('sorting_name');">
-                    <label for="sorting_name">Sort by name</label>
-                </div>
-                <div>
-                    <input type="radio" id="sorting_most_finishes" name="sorting_list" value="most_finishes" onclick="display_results('sorting_most_finishes');">
-                    <label for="sorting_most_finishes">Sort by most finishes</label>
-                </div>
-                <div>
-                    <input type="radio" id="sorting_median_time" name="sorting_list" value="median_time" onclick="display_results('sorting_median_time');">
-                    <label for="sorting_median_time">Sort by shortest median time</label>
-                </div>
+                <p id="sort_description" class="sort_description" aria-live="polite"></p>
             </div>
-            <br>
             <div id="map_results_div"></div>
             <p id="map_data_last_updated_p">Map times last updated: </p>
         </div>
     </main>
-    <footer>
-        <p>Copyright © 2025</p>
-    </footer>
 </body>
 
 <script>
@@ -162,7 +149,6 @@
     const textinputs_div = document.getElementById("textinputs")
     const results_section_div = document.getElementById("results_section_div")
     const map_results_div = document.getElementById("map_results_div")
-    const results_shortcut_links_div = document.getElementById("results_shortcut_links_div")
     const results_sorting_buttons_div = document.getElementById("results_sorting_buttons_div")
     const player_results_div = document.getElementById("player_results_div")
     let common_unfinished_maps_dict = {} // key is server type e.g. Novice, value is Set of map names
@@ -190,10 +176,13 @@
         const new_input = document.createElement("input")
         new_input.type = "text"
         new_input.className = "username_text_input"
+        new_input.setAttribute("aria-label", "Player name")
 
         const new_delete_button = document.createElement("button")
-        new_delete_button.className = "hover_button button_red"
-        new_delete_button.textContent = "X"
+        new_delete_button.className = "btn btn_icon btn_remove"
+        new_delete_button.title = "Remove player"
+        new_delete_button.setAttribute("aria-label", "Remove player")
+        new_delete_button.textContent = "×"
         new_delete_button.addEventListener("click", function () {
             new_div.remove()
         })
@@ -305,7 +294,6 @@
 
         results_section_div.style.display = "block"
         show_loading_spinner(map_results_div)
-        clear_element(results_shortcut_links_div)
         show_loading_spinner(player_results_div)
         results_sorting_buttons_div.style.display = "none"
 
@@ -359,7 +347,6 @@
         select_sorting_radio(radio_button_id)
 
         clear_element(map_results_div)
-        clear_element(results_shortcut_links_div)
         clear_element(player_results_div)
 
         // Create player links
@@ -375,7 +362,6 @@
                 continue
             }
 
-            results_shortcut_links_div.appendChild(create_server_type_shortcut(server_type, sorted_map_names.length))
 
             const rows = sorted_map_names.map(map_name => [
                 create_map_link(map_name),
@@ -383,12 +369,12 @@
                 details[map_name] ? details[map_name]["total_finishes"] : null,
                 format_time(get_median_time(map_name)) + " / " + format_time(get_top_time(map_name))
             ])
-            map_results_div.appendChild(create_map_section(server_type, ["Map Name", "Points", "Finishes", "Median/Top Time"], rows))
+            map_results_div.appendChild(create_map_section(server_type, ["Map Name", "Points", "Finishes", "Median / Top Time"], rows))
         }
         if (!map_results_div.hasChildNodes()) {
             map_results_div.textContent = "None"
         }
-        results_sorting_buttons_div.style.display = "block"
+        results_sorting_buttons_div.style.display = ""
     }
 
     function set_server_dropdown_placeholder(server_selection_dropdown, text) {

@@ -1,5 +1,5 @@
-/* From https://www.w3schools.com/howto/howto_js_autocomplete.asp */
-/* Slightly edited by UnlucksMcGee */
+/* Based on https://www.w3schools.com/howto/howto_js_autocomplete.asp */
+/* Restyled by UnlucksMcGee. Colours come from css/main.css (with fallbacks). */
 
 .autocomplete {
     /*the container must be positioned relative:*/
@@ -9,28 +9,36 @@
 
 .autocomplete-items {
     position: absolute;
-    border: 1px solid #d4d4d4;
-    border-bottom: none;
-    border-top: none;
+    top: calc(100% + 0.25rem);
+    left: 0;
+    right: 0;
     z-index: 99;
     max-height: 50vh;
     overflow-y: auto;
+    background-color: var(--surface, #fff);
+    border: 1px solid var(--border, #d4d4d4);
+    border-radius: var(--radius-sm, 0.5rem);
+    box-shadow: 0 8px 24px rgba(16, 24, 40, 0.15);
 }
 
 .autocomplete-items div {
-    padding: 10px;
+    padding: 0.5rem 0.75rem;
     cursor: pointer;
-    background-color: #fff;
-    border-bottom: 1px solid #d4d4d4;
+    font-size: 0.9rem;
+    border-bottom: 1px solid var(--border, #d4d4d4);
+}
+
+.autocomplete-items div:last-child {
+    border-bottom: none;
 }
 
 .autocomplete-items div:hover {
     /*when hovering an item:*/
-    background-color: #e9e9e9;
+    background-color: var(--accent-soft, #e9e9e9);
 }
 
 .autocomplete-active {
     /*when navigating through the items using the arrow keys:*/
-    background-color: DodgerBlue !important;
-    color: #ffffff;
+    background-color: var(--accent, DodgerBlue) !important;
+    color: var(--on-accent, #ffffff);
 }

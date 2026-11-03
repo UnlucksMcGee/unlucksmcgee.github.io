@@ -31,7 +31,8 @@ test("search renders finished maps sorted by percentile", async () => {
 
     // Brutal has only unfinished maps and Solo has none, so no sections for them
     assert.deepEqual([...doc.querySelectorAll(".map_section")].map(s => s.id), ["Novice", "Moderate"])
-    assert.deepEqual([...doc.querySelectorAll("#results_shortcut_links_div a")].map(a => a.textContent), ["Novice (3)", "Moderate (2)"])
+    assert.deepEqual([...doc.querySelectorAll(".map_section h3")].map(h => h.textContent), ["Novice (3)", "Moderate (2)"])
+    assert.equal(doc.getElementById("sort_description").textContent, "Your weakest ranks first: the best maps to improve on")
     assert.deepEqual(cell_texts([...doc.querySelectorAll("#Novice tr")].slice(1)), [
         ["Beta", "2", "251/501", "50.0", "01:08:20 / 01:06:40 / ?"],
         ["Diversity", "5", "13603/61453", "77.8", "12:59 / 25:33 / 01:25"],

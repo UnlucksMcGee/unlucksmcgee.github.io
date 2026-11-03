@@ -47,87 +47,71 @@
     <script src="js/autocomplete.js"></script>
     <script src="js/map_data.js"></script>
     <script src="js/ddnet_common.js"></script>
-    <style>
-        nav a {
-            color: black;
-            background-color: var(--link_background_color);
-            border: none
-        }
-        nav a:hover {
-            background-color: var(--link_hover_color);
-        }
-    </style>
 </head>
 
 <body>
     <header>
         <nav>
-            <a href="/">Home</a>
+            <a href="/" class="nav_home">&larr; Home</a>
             <h1>DDNet Rank Search</h1>
         </nav>
     </header>
     <main>
-        <br>
-        <h2 style="text-align: center;">Find DDNet maps to improve time rankings.</h2>
-        <br>
-        <br>
-        <div
-            style="margin: 0 auto; width: fit-content; padding: 1rem; background-color: var(--secondary_colour); border-radius: 1rem; box-shadow: 0px 0px 6px 0px rgba(0, 0, 0, 0.5);">
-            <div id="textinputs">
+        <div class="page_intro">
+            <h2>Find maps to improve your rankings</h2>
+            <p>See every map a player has finished, sorted by where their time ranks.</p>
+        </div>
 
-                <p>Enter player username here: (case-sensitive!)</p>
-                <br>
+        <div class="card search_card">
+            <div id="textinputs">
+                <label class="field_label" for="text_player1">Player <span class="field_hint">(names are case-sensitive)</span></label>
                 <div class="textdiv" id="div_player1" data-num=1>
-                    <label for="text_player1">Player:</label>
                     <input type="text" id="text_player1" value="UnlucksMcGee">
                 </div>
             </div>
-            <div style="text-align: center;">
-                <br>
-                <br>
-                <button id="search_button" class="hover_button button_cyan" onclick="search()">Search</button>
+            <div class="search_actions">
+                <button id="search_button" class="btn btn_primary btn_block" onclick="search()">Search</button>
             </div>
         </div>
-        <br>
-        <br>
+
         <div id="results_section_div" style="display: none;">
-            <h3 style="text-align: center; margin-bottom: 1rem;">Player</h3>
-            <div style="text-align: center;" id="player_results_div"></div>
-            <br>
-            <h3 style="text-align: center; margin-bottom: 1rem;">Finished Maps</h3>
-            <div style="text-align: center;" id="results_shortcut_links_div"></div>
-            <br>
-            <br>
-            <div style="text-align: center; display: none;" id="results_sorting_buttons_div">
-                <div>
-                    <input type="radio" id="sorting_percentile" name="sorting_list" value="percentile" checked onclick="display_results('sorting_percentile');">
-                    <label for="sorting_percentile">Sort by lowest percentile</label>
+            <section class="results_block">
+                <h3 class="section_title">Player</h3>
+                <div id="player_results_div"></div>
+            </section>
+            <h3 class="section_title">Finished maps</h3>
+            <div id="results_sorting_buttons_div" style="display: none;">
+                <div class="sort_row">
+                    <span class="sort_label" id="sort_label">Sort by</span>
+                    <div class="sort_options" role="radiogroup" aria-labelledby="sort_label" aria-describedby="sort_description">
+                        <div>
+                            <input type="radio" id="sorting_percentile" name="sorting_list" data-description="Your weakest ranks first: the best maps to improve on" value="percentile" checked onclick="display_results('sorting_percentile');">
+                            <label for="sorting_percentile">Lowest percentile</label>
+                        </div>
+                        <div>
+                            <input type="radio" id="sorting_easiest" name="sorting_list" data-description="Fewest points first, then most finishes" value="easiest" onclick="display_results('sorting_easiest');">
+                            <label for="sorting_easiest">Easiest</label>
+                        </div>
+                        <div>
+                            <input type="radio" id="sorting_name" name="sorting_list" data-description="Alphabetical by map name" value="name" onclick="display_results('sorting_name');">
+                            <label for="sorting_name">Name</label>
+                        </div>
+                        <div>
+                            <input type="radio" id="sorting_most_finishes" name="sorting_list" data-description="Most finished maps first" value="most_finishes" onclick="display_results('sorting_most_finishes');">
+                            <label for="sorting_most_finishes">Most finishes</label>
+                        </div>
+                        <div>
+                            <input type="radio" id="sorting_median_time" name="sorting_list" data-description="Shortest median finish time first" value="median_time" onclick="display_results('sorting_median_time');">
+                            <label for="sorting_median_time">Shortest median time</label>
+                        </div>
+                    </div>
                 </div>
-                <div title='"Easiest" means least points and then most finishes'>
-                    <input type="radio" id="sorting_easiest" name="sorting_list" value="easiest" onclick="display_results('sorting_easiest');">
-                    <label for="sorting_easiest">Sort by "easiest"</label>
-                </div>
-                <div>
-                    <input type="radio" id="sorting_name" name="sorting_list" value="name" onclick="display_results('sorting_name');">
-                    <label for="sorting_name">Sort by name</label>
-                </div>
-                <div>
-                    <input type="radio" id="sorting_most_finishes" name="sorting_list" value="most_finishes" onclick="display_results('sorting_most_finishes');">
-                    <label for="sorting_most_finishes">Sort by most finishes</label>
-                </div>
-                <div>
-                    <input type="radio" id="sorting_median_time" name="sorting_list" value="median_time" onclick="display_results('sorting_median_time');">
-                    <label for="sorting_median_time">Sort by shortest median time</label>
-                </div>
+                <p id="sort_description" class="sort_description" aria-live="polite"></p>
             </div>
-            <br>
-            <div id="map_results_div"></div>
+            <div id="map_results_div" class="wide_tables"></div>
             <p id="map_data_last_updated_p">Map times last updated: </p>
         </div>
     </main>
-    <footer>
-        <p>Copyright © 2023</p>
-    </footer>
 </body>
 
 <script>
@@ -136,7 +120,6 @@
 
     const results_section_div = document.getElementById("results_section_div")
     const map_results_div = document.getElementById("map_results_div")
-    const results_shortcut_links_div = document.getElementById("results_shortcut_links_div")
     const results_sorting_buttons_div = document.getElementById("results_sorting_buttons_div")
     const player_results_div = document.getElementById("player_results_div")
     let finished_maps_dict = {} // key is server type e.g. Novice, value is array of finished map names
@@ -193,7 +176,6 @@
 
         results_section_div.style.display = "block"
         show_loading_spinner(map_results_div)
-        clear_element(results_shortcut_links_div)
         show_loading_spinner(player_results_div)
         results_sorting_buttons_div.style.display = "none"
 
@@ -238,7 +220,6 @@
         select_sorting_radio(radio_button_id)
 
         clear_element(map_results_div)
-        clear_element(results_shortcut_links_div)
         clear_element(player_results_div)
 
         player_results_div.appendChild(create_player_link(current_username, current_player_points))
@@ -251,7 +232,6 @@
                 continue
             }
 
-            results_shortcut_links_div.appendChild(create_server_type_shortcut(server_type, sorted_map_names.length))
 
             const rows = sorted_map_names.map(map_name => [
                 create_map_link(map_name),
@@ -260,12 +240,12 @@
                 format_percentile(details[map_name]["rank_percentile"]),
                 format_time(details[map_name]["time"]) + " / " + format_time(get_median_time(map_name)) + " / " + format_time(get_top_time(map_name))
             ])
-            map_results_div.appendChild(create_map_section(server_type, ["Map Name", "Points", "Rank/Finishes", "%ile", "Your Time/Median/Top Time"], rows))
+            map_results_div.appendChild(create_map_section(server_type, ["Map Name", "Points", "Rank/Finishes", "%ile", "Your / Median / Top Time"], rows))
         }
         if (!map_results_div.hasChildNodes()) {
             map_results_div.textContent = "None"
         }
-        results_sorting_buttons_div.style.display = "block"
+        results_sorting_buttons_div.style.display = ""
     }
 </script>
 

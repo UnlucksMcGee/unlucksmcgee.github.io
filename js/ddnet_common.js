@@ -220,19 +220,18 @@ function show_loading_spinner(element) {
     element.replaceChildren(spinner)
 }
 
+// Checks the chosen sort option and shows its data-description under the options
 function select_sorting_radio(radio_button_id) {
+    let description = ""
     for (const radio_button of document.getElementsByName("sorting_list")) {
         radio_button.checked = (radio_button.id === radio_button_id)
+        if (radio_button.checked) {
+            description = radio_button.getAttribute("data-description") || ""
+        }
     }
-}
-
-function highlight_server_type(element_id) {
-    for (const map_section of document.getElementsByClassName("map_section")) {
-        map_section.classList.remove("highlighted")
-    }
-    const current_section = document.getElementById(element_id)
-    if (current_section) {
-        current_section.classList.add("highlighted")
+    const description_element = document.getElementById("sort_description")
+    if (description_element) {
+        description_element.textContent = description
     }
 }
 
@@ -240,20 +239,10 @@ function create_player_link(username, points) {
     const link = document.createElement("a")
     link.href = ddnet_player_url(username)
     link.target = "_blank"
+    link.rel = "noopener"
     link.title = "Open player page on ddnet.org"
     link.className = "player_link"
     link.textContent = username + " (" + format_value(points) + "pts)"
-    return link
-}
-
-function create_server_type_shortcut(server_type, count) {
-    const link = document.createElement("a")
-    link.href = "#" + server_type
-    link.className = "server_type_class"
-    link.textContent = server_type + " (" + count + ")"
-    link.addEventListener("click", function () {
-        highlight_server_type(server_type)
-    })
     return link
 }
 
@@ -261,6 +250,7 @@ function create_map_link(map_name) {
     const link = document.createElement("a")
     link.href = ddnet_map_url(map_name)
     link.target = "_blank"
+    link.rel = "noopener"
     link.textContent = map_name
     return link
 }
@@ -273,17 +263,20 @@ function create_map_section(server_type, header_titles, rows) {
 
     const header = document.createElement("h3")
     header.textContent = server_type + " (" + rows.length + ")"
-    header.style.textAlign = "center"
 
     const table = document.createElement("table")
+    const thead = document.createElement("thead")
     const header_row = document.createElement("tr")
     for (const header_title of header_titles) {
         const th = document.createElement("th")
+        th.scope = "col"
         th.textContent = header_title
         header_row.appendChild(th)
     }
-    table.appendChild(header_row)
+    thead.appendChild(header_row)
+    table.appendChild(thead)
 
+    const tbody = document.createElement("tbody")
     for (const row of rows) {
         const tr = document.createElement("tr")
         for (const cell of row) {
@@ -295,11 +288,17 @@ function create_map_section(server_type, header_titles, rows) {
             }
             tr.appendChild(td)
         }
-        table.appendChild(tr)
+        tbody.appendChild(tr)
     }
+    table.appendChild(tbody)
+
+    // Only the table scrolls, so the title and (sticky) column headers stay visible
+    const table_scroll = document.createElement("div")
+    table_scroll.className = "table_scroll"
+    table_scroll.appendChild(table)
 
     section_div.appendChild(header)
-    section_div.appendChild(table)
+    section_div.appendChild(table_scroll)
     return section_div
 }
 
