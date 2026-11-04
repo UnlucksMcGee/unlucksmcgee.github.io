@@ -1,7 +1,7 @@
 {
   "name": "unlucksmcgee-site-tests",
   "private": true,
-  "description": "jsdom tests for ddnet.html (both modes) and its shared js",
+  "description": "jsdom tests for ddnet.html (both modes), kog.html and their js",
   "scripts": {
     "test": "node --test"
   },

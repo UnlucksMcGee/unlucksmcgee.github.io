@@ -1,0 +1,41 @@
+name: Update KoG data
+
+on:
+  schedule:
+    - cron: '0 5 3 * *'  # 05:00 UTC on the 3rd of every month
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-kog-data
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+
+      # Scrapes kog.tw one page at a time (~1100 map pages); takes ~30-60 minutes.
+      - name: Build map data
+        run: python scripts/build_kog_data.py
+
+      - name: Commit and push if changed
+        run: |
+          git add js/kog_map_data.js
+          if git diff --cached --quiet -- js/kog_map_data.js; then
+            echo "No changes."
+            exit 0
+          fi
+          updated=$(sed -n 's/^const kog_map_data_last_updated = "\(.*\)";$/\1/p' js/kog_map_data.js)
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Update KoG map data (${updated})"
+          git push

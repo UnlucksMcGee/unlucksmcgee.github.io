@@ -16,6 +16,17 @@ const map_data = {
     "Diversity": {"median_time": 1533.1, "top_time": 85.44}
 };`
 
+// Stand-in for js/kog_map_data.js (regenerated monthly), in the same format
+const STAND_IN_KOG_MAP_DATA = `const kog_map_data_last_updated = "4 November 2026";
+const kog_map_data = {
+    "Easy1": {"category": "Easy", "stars": 1, "points": 2, "mapper": "A", "released": "2020-01-01", "top_time": 30.5, "last_time": 90, "last_rank": 99},
+    "Easy2": {"category": "Easy", "stars": 1, "points": 2, "mapper": "B", "released": "2026-10-26", "top_time": 20, "last_time": 60, "last_rank": 12},
+    "Main1": {"category": "Main", "stars": 2, "points": 6, "mapper": "C", "released": "2021-04-23", "top_time": 79.7, "last_time": 400, "last_rank": 99},
+    "Hard1": {"category": "Hard", "stars": 4, "points": 20, "mapper": "D", "released": null, "top_time": 200, "last_time": 3700, "last_rank": 99},
+    "Empty": {"category": "Unknown", "stars": 5, "points": 40, "mapper": "E", "released": "2019-02-02", "top_time": null, "last_time": null, "last_rank": null},
+    "<b>x</b>": {"category": "Main", "stars": 1, "points": 1, "mapper": "<i>m</i>", "released": "2022-02-02", "top_time": 5, "last_time": 10, "last_rank": 3}
+};`
+
 const XSS_PLAYER = "<img src=x onerror=alert(1)>"
 
 function make_player(types, points = 42) {
@@ -90,15 +101,18 @@ function silent_console(window_errors) {
     return virtual_console
 }
 
-// Loads a page (query e.g. "?mode=rank" is added to its URL) with its local js/ scripts inlined (js/map_data.js replaced by the stand-in, or dropped
-// when map_data is null) and the Google Analytics snippet removed.
-function load_page(file, { saved_usernames = null, saved_region = null, map_data = STAND_IN_MAP_DATA, query = "" } = {}) {
+// Loads a page (query e.g. "?mode=rank" or "#hash" is added to its URL) with its local js/ scripts inlined (js/map_data.js and
+// js/kog_map_data.js replaced by the stand-ins, or dropped when null) and the Google Analytics snippet removed.
+// storage: extra localStorage items to set before the page's scripts run.
+function load_page(file, { saved_usernames = null, saved_region = null, map_data = STAND_IN_MAP_DATA, kog_map_data = STAND_IN_KOG_MAP_DATA, storage = {}, query = "" } = {}) {
     let html = fs.readFileSync(path.join(REPO, file), "utf8")
     const scripts = []
     html = html.replace(/<script\b([^>]*)>([\s\S]*?)<\/script>/g, (all, attrs, body) => {
         const src = /src="([^"]+)"/.exec(attrs)
         if (src && src[1] == "js/map_data.js") {
             if (map_data !== null) scripts.push(map_data)
+        } else if (src && src[1] == "js/kog_map_data.js") {
+            if (kog_map_data !== null) scripts.push(kog_map_data)
         } else if (src && src[1].startsWith("js/")) {
             scripts.push(fs.readFileSync(path.join(REPO, src[1]), "utf8"))
         } else if (!src && !body.includes("gtag")) {
@@ -122,6 +136,7 @@ function load_page(file, { saved_usernames = null, saved_region = null, map_data
     w.HTMLElement.prototype.scrollIntoView = function () {}
     if (saved_usernames) w.localStorage.setItem("usernames", JSON.stringify(saved_usernames))
     if (saved_region) w.localStorage.setItem("ddnet_region", saved_region)
+    for (const [key, value] of Object.entries(storage)) w.localStorage.setItem(key, value)
     for (const source of scripts) {
         const element = w.document.createElement("script")
         element.textContent = source
@@ -135,4 +150,4 @@ const tick = (ms = 20) => new Promise(resolve => setTimeout(resolve, ms))
 
 const cell_texts = rows => rows.map(tr => [...tr.children].map(td => td.textContent))
 
-module.exports = { REPO, STAND_IN_MAP_DATA, XSS_PLAYER, players, search_results, rank_player, load_page, tick, cell_texts }
+module.exports = { REPO, STAND_IN_MAP_DATA, STAND_IN_KOG_MAP_DATA, XSS_PLAYER, players, search_results, rank_player, load_page, tick, cell_texts }

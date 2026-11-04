@@ -4,16 +4,20 @@ on:
   push:
     paths:
       - "ddnet*.html"
+      - "kog*.html"
       - "js/**"
       - "css/ddnet.css"
+      - "css/kog.css"
       - "tests/**"
       - "scripts/**"
       - ".github/workflows/test.yml"
   pull_request:
     paths:
       - "ddnet*.html"
+      - "kog*.html"
       - "js/**"
       - "css/ddnet.css"
+      - "css/kog.css"
       - "tests/**"
       - "scripts/**"
       - ".github/workflows/test.yml"

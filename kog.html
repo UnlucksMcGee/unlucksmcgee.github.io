@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Find KoG (King of Gores) maps to play next: maps you or your group haven't finished, sorted by difficulty or time." />
+    <meta name="robots" content="index,follow" />
+    <meta property="og:url" content="https://unlucksmcgee.github.io/kog.html" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="KoG Map Finder" />
+    <meta property="og:description" content="Find KoG (King of Gores) maps to play next: maps you or your group haven't finished, sorted by difficulty or time." />
+    <meta property="og:site_name" content="UnlucksMcGee" />
+    <meta property="og:locale" content="en_US" />
+    <title>KoG Map Finder - UnlucksMcGee</title>
+    <link href="css/main.css" rel="stylesheet" />
+    <link href="css/ddnet.css" rel="stylesheet" />
+    <link href="css/kog.css" rel="stylesheet" />
+    <script src="js/kog_map_data.js"></script>
+    <!-- shared formatting, sorting and table helpers -->
+    <script src="js/ddnet_common.js"></script>
+    <script src="js/kog_bookmarklet.js"></script>
+    <script src="js/kog.js"></script>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-J887VM1ELW"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+
+        gtag('config', 'G-J887VM1ELW');
+    </script>
+</head>
+
+<body>
+    <header>
+        <nav>
+            <a href="/" class="nav_home">&larr;<span class="nav_home_text"> Home</span></a>
+            <h1>KoG Map Finder</h1>
+        </nav>
+    </header>
+    <main id="kog_main">
+        <div class="page_intro">
+            <h2>Find unfinished KoG maps for you or your group</h2>
+            <p>Import player data from <a href="https://kog.tw/" target="_blank" rel="noopener">kog.tw</a> using the bookmark below.</p>
+        </div>
+
+        <div class="card search_card">
+            <p class="field_label">Players</p>
+            <ul id="kog_player_list" class="kog_player_list" role="list"></ul>
+            <p id="kog_no_players" class="field_note">No players yet: every map is listed.</p>
+
+            <details id="kog_add_player" class="kog_add_player">
+                <summary>+ Add or refresh a player</summary>
+                <p class="field_note">KoG doesn't let other sites read player data, but a bookmark can import it:</p>
+                <ol class="kog_steps">
+                    <li>Drag this to your bookmarks bar: <a id="kog_bookmarklet_link" class="btn btn_secondary kog_bookmarklet" href="#">KoG &rarr; Map Finder</a></li>
+                    <li>Open your player page on kog.tw <span class="field_hint">(names are case-sensitive)</span>:
+                        <form class="textdiv kog_open_player" onsubmit="open_player_page(event)">
+                            <input type="text" id="kog_open_player_input" placeholder="Your KoG name" aria-label="KoG player name" autocomplete="off" data-1p-ignore data-lpignore="true" data-bwignore data-form-type="other">
+                            <button type="submit" class="btn btn_secondary">Open on kog.tw</button>
+                        </form>
+                    </li>
+                    <li>Click the bookmark to import that player's data back here.</li>
+                </ol>
+                <p class="field_note">To refresh the data, you'll need to repeat step 2 and 3 for each player.</p>
+            </details>
+        </div>
+
+        <div id="search_notice" class="notice" role="status" hidden>
+            <p id="search_notice_text"></p>
+        </div>
+
+        <div id="results_section_div">
+            <div id="kog_category_filter" class="kog_category_filter" role="group" aria-label="Categories"></div>
+            <div id="results_sorting_buttons_div">
+                <div class="sort_row">
+                    <span class="sort_label" id="sort_label">Sort by</span>
+                    <div class="sort_options" role="radiogroup" aria-labelledby="sort_label" aria-describedby="sort_description">
+                        <div>
+                            <input type="radio" id="sorting_easiest" name="sorting_list" data-description="Fewest stars first, then fewest points, then shortest 99th place time" value="easiest" checked onclick="display_results('sorting_easiest');">
+                            <label for="sorting_easiest">Easiest</label>
+                        </div>
+                        <div>
+                            <input type="radio" id="sorting_last_time" name="sorting_list" data-description="Shortest 99th place time first (the slowest finisher when fewer than 99 have finished)" value="last_time" onclick="display_results('sorting_last_time');">
+                            <label for="sorting_last_time">99th place time</label>
+                        </div>
+                        <div>
+                            <input type="radio" id="sorting_top_time" name="sorting_list" data-description="Shortest record time first" value="top_time" onclick="display_results('sorting_top_time');">
+                            <label for="sorting_top_time">Top time</label>
+                        </div>
+                        <div>
+                            <input type="radio" id="sorting_points" name="sorting_list" data-description="Fewest points first" value="points" onclick="display_results('sorting_points');">
+                            <label for="sorting_points">Points</label>
+                        </div>
+                        <div>
+                            <input type="radio" id="sorting_newest" name="sorting_list" data-description="Most recently released first" value="newest" onclick="display_results('sorting_newest');">
+                            <label for="sorting_newest">Newest</label>
+                        </div>
+                        <div>
+                            <input type="radio" id="sorting_name" name="sorting_list" data-description="Alphabetical by map name" value="name" onclick="display_results('sorting_name');">
+                            <label for="sorting_name">Name</label>
+                        </div>
+                    </div>
+                </div>
+                <p id="sort_description" class="sort_description" aria-live="polite"></p>
+            </div>
+            <div id="map_results_div"></div>
+            <p id="map_data_last_updated_p">Map times last updated: </p>
+        </div>
+    </main>
+</body>
+
+<script>
+    const page_url = window.location.origin + window.location.pathname
+    const map_results_div = document.getElementById("map_results_div")
+    let players = load_kog_players()
+    let hidden_categories = load_hidden_categories()
+    let current_sort = "sorting_easiest"
+
+    // ---------- Notices ----------
+
+    function show_notice(message, kind) {
+        const notice = document.getElementById("search_notice")
+        notice.className = "notice " + (kind === "error" ? "notice_error" : "notice_info")
+        document.getElementById("search_notice_text").textContent = message
+        notice.hidden = false
+    }
+
+    function hide_notice() {
+        document.getElementById("search_notice").hidden = true
+    }
+
+    // ---------- Players ----------
+
+    function add_imported_player(text) {
+        let imported
+        try {
+            imported = parse_kog_import(text)
+        } catch (err) {
+            show_notice(err.message, "error")
+            return false
+        }
+        const known = players.some(p => p["name"] === imported["name"])
+        players = upsert_kog_player(players, imported, new Date())
+        if (!save_kog_players(players)) {
+            show_notice("Added " + imported["name"] + ", but your browser didn't let this page save it for next time.", "error")
+        } else {
+            show_notice((known ? "Updated " : "Added ") + imported["name"] + ": " +
+                Object.keys(imported["finished"]).length + " finished maps.", "info")
+        }
+        render_players()
+        display_results(current_sort)
+        return true
+    }
+
+    // Imports a player from "#kog_import=..." (where the bookmark sends you), then drops it from the URL
+    function import_from_hash() {
+        if (!window.location.hash.startsWith("#" + KOG_IMPORT_HASH_KEY + "=")) {
+            return
+        }
+        const hash = window.location.hash
+        history.replaceState(null, "", page_url + window.location.search)
+        add_imported_player(hash)
+    }
+
+    // Step 2 of the how-to: opens the typed player's page on kog.tw in a new tab
+    function open_player_page(event) {
+        event.preventDefault()
+        const input = document.getElementById("kog_open_player_input")
+        const name = input.value.trim()
+        if (!name) {
+            input.focus()
+            return
+        }
+        window.open(kog_player_url(name), "_blank", "noopener")
+    }
+
+    function remove_player(index) {
+        players.splice(index, 1)
+        save_kog_players(players)
+        hide_notice()
+        render_players()
+        display_results(current_sort)
+    }
+
+    function render_players() {
+        const list = document.getElementById("kog_player_list")
+        const items = players.map((player, index) => {
+            const item = document.createElement("li")
+            item.className = "kog_player"
+
+            const name = document.createElement("span")
+            name.className = "kog_player_name"
+            name.textContent = player["name"]
+
+            const details = document.createElement("span")
+            details.className = "kog_player_details"
+            const rank = is_valid_number(player["rank"]) ? " · #" + player["rank"] : ""
+            details.appendChild(document.createTextNode(format_value(player["points"]) + " pts" + rank + " · " +
+                Object.keys(player["finished"]).length + " finished · " + format_short_date(player["updated"]) + " · "))
+            details.appendChild(create_kog_link(kog_player_url(player["name"]), "kog.tw", "Open player page on kog.tw"))
+
+            const remove = document.createElement("button")
+            remove.className = "btn btn_icon btn_remove"
+            remove.title = "Remove player"
+            remove.setAttribute("aria-label", "Remove " + player["name"])
+            remove.textContent = "×"
+            remove.addEventListener("click", () => remove_player(index))
+
+            const text = document.createElement("div")
+            text.className = "kog_player_text"
+            text.appendChild(name)
+            text.appendChild(details)
+            item.appendChild(text)
+            item.appendChild(remove)
+            return item
+        })
+        list.replaceChildren(...items)
+        document.getElementById("kog_no_players").hidden = players.length > 0
+        // Open the how-to while there's nobody to pick from
+        if (players.length === 0) {
+            document.getElementById("kog_add_player").open = true
+        }
+    }
+
+    // ---------- Categories ----------
+
+    function render_category_filter() {
+        const container = document.getElementById("kog_category_filter")
+        const chips = kog_categories().map(category => {
+            const label = document.createElement("label")
+            label.className = "kog_category"
+            const checkbox = document.createElement("input")
+            checkbox.type = "checkbox"
+            checkbox.value = category
+            checkbox.checked = !hidden_categories.includes(category)
+            checkbox.addEventListener("change", () => {
+                hidden_categories = checkbox.checked ? hidden_categories.filter(c => c !== category) : hidden_categories.concat([category])
+                save_hidden_categories(hidden_categories)
+                display_results(current_sort)
+            })
+            label.appendChild(checkbox)
+            label.appendChild(document.createTextNode(" " + kog_category_label(category)))
+            return label
+        })
+        container.replaceChildren(...chips)
+    }
+
+    // ---------- Results ----------
+
+    function display_results(radio_button_id) {
+        current_sort = radio_button_id
+        select_sorting_radio(radio_button_id)
+        clear_element(map_results_div)
+
+        if (Object.keys(get_kog_maps()).length === 0) {
+            map_results_div.textContent = "The KoG map list couldn't be loaded. Try reloading the page."
+            return
+        }
+        const map_names = find_kog_unfinished_maps(players, hidden_categories).sort(get_kog_comparator(radio_button_id))
+        if (map_names.length === 0) {
+            map_results_div.textContent = players.length > 0 ? "None: every map in these categories is finished!" : "None"
+            return
+        }
+        const rows = map_names.map(map_name => {
+            const map = get_kog_map(map_name)
+            return [
+                create_kog_link(kog_map_url(map_name), map_name),
+                kog_category_label(map["category"]),
+                format_stars(map["stars"]),
+                map["points"],
+                format_time(map["top_time"]),
+                format_last_place(map),
+            ]
+        })
+        const title = players.length === 0 ? "All maps" :
+            "Unfinished by " + (players.length === 1 ? players[0]["name"] : "all " + players.length + " players")
+        const section = create_map_section(title, ["Map Name", "Category", "Stars", "Points", "Top Time", "99th Place"], rows)
+        section.id = "kog_maps"
+        map_results_div.appendChild(section)
+    }
+
+    // ---------- Start ----------
+
+    document.getElementById("map_data_last_updated_p").textContent = "Map times last updated: " + get_kog_map_data_last_updated()
+    const bookmarklet_link = document.getElementById("kog_bookmarklet_link")
+    bookmarklet_link.href = kog_bookmarklet_href(page_url)
+    bookmarklet_link.addEventListener("click", event => {
+        event.preventDefault()
+        alert("Drag this button to your bookmarks bar, then click the bookmark while you're on kog.tw.")
+    })
+
+    render_players()
+    if (players.length > 0) {
+        document.getElementById("kog_open_player_input").value = players[0]["name"]
+    }
+    render_category_filter()
+    display_results(current_sort)
+    import_from_hash()
+    window.addEventListener("hashchange", import_from_hash)
+</script>
+
+</html>

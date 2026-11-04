@@ -1,0 +1,120 @@
+/* kog.html: additions on top of css/ddnet.css */
+
+.notice_info {
+    border-left-color: var(--accent);
+}
+
+/* ---------- Saved players ---------- */
+
+.kog_player_list {
+    margin: 0 0 0.5rem;
+    padding: 0;
+    list-style: none;
+}
+
+.kog_player {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.kog_player:last-child {
+    border-bottom: none;
+}
+
+.kog_player_text {
+    flex: 1;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.kog_player_name {
+    font-weight: 600;
+}
+
+.kog_player_details {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+/* ---------- Adding players ---------- */
+
+.kog_add_player {
+    margin-top: 0.75rem;
+}
+
+.kog_add_player summary {
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--accent);
+}
+
+.kog_add_player[open] summary {
+    margin-bottom: 0.75rem;
+}
+
+.kog_add_player .field_note {
+    margin-top: 0.5rem;
+}
+
+.kog_steps {
+    margin: 0.5rem 0 0.75rem;
+    padding-left: 1.25rem;
+    font-size: 0.875rem;
+}
+
+.kog_steps li {
+    margin-bottom: 0.4rem;
+}
+
+.kog_open_player {
+    margin-top: 0.4rem;
+}
+
+.kog_bookmarklet {
+    display: inline-block;
+    margin-left: 0.25rem;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.85rem;
+    cursor: grab;
+}
+
+/* ---------- Map table ---------- */
+
+/* One table instead of DDNet's grid of cards: centred, wider, and nearly a screen tall
+   (it scrolls inside, so the column headers stay in view) */
+#kog_main #map_results_div {
+    display: block;
+    max-width: 52rem;
+    margin: 0 auto;
+}
+
+#kog_main #map_results_div:not(:has(.map_section)) {
+    display: flex;
+}
+
+#kog_main .map_section {
+    height: max(24rem, calc(100vh - 8rem));
+}
+
+#kog_main #map_data_last_updated_p {
+    text-align: center;
+}
+
+/* ---------- Category filter ---------- */
+
+.kog_category_filter {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.4rem 1rem;
+    margin-bottom: 1rem;
+    font-size: 0.875rem;
+}
+
+.kog_category {
+    cursor: pointer;
+}
